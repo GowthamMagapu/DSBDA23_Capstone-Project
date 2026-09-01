@@ -49,7 +49,14 @@ export function SignInFormContent({ onSuccess }: { onSuccess?: () => void }) {
       })
 
       if (result?.error) {
-        setError('password', { message: 'Invalid email or password' })
+        setError('email', {
+          type: 'manual',
+          message: 'We could not find an account with that email, or the password is incorrect.',
+        })
+        setError('password', {
+          type: 'manual',
+          message: 'Try again or use “Forgot password” to reset your access.',
+        })
         return
       }
 
@@ -61,7 +68,7 @@ export function SignInFormContent({ onSuccess }: { onSuccess?: () => void }) {
         router.refresh()
       }, 800)
     } catch {
-      setError('password', { message: 'Something went wrong. Please try again.' })
+      setError('password', { message: 'Something went wrong. Please try again in a moment.' })
     } finally {
       setIsLoading(false)
     }

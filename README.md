@@ -1,6 +1,22 @@
 <<<<<<< HEAD
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## LinkedIn job posting setup
+
+When a job is published, the HR agent can automatically create a LinkedIn post using the public job page.
+
+1. Create a LinkedIn app or use a valid access token with permissions for `ugcPosts`.
+2. Add your company organization URN and access token to `.env`:
+
+```bash
+LINKEDIN_ACCESS_TOKEN="your-linkedin-access-token"
+LINKEDIN_ORGANIZATION_URN="your-linkedin-organization-urn"
+```
+
+3. Keep `NEXT_PUBLIC_APP_URL` pointing at your deployed app URL so the public job page is correct.
+
+If those variables are missing, publishing still works and the app will skip LinkedIn posting without breaking the job flow.
+
 ## Getting Started
 
 First, run the development server:

@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight, Check, LockKeyhole, Sparkles } from 'lucide-react'
 import { SignInForm } from '@/components/auth/SignInForm'
-import { GoogleButton } from '@/components/auth/GoogleButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +18,7 @@ export default function SignInPage() {
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-sm text-black">
             ✦
           </span>
-          <span>AI Agent</span>
+          <span>AgentU</span>
         </Link>
         <p className="text-sm text-white/55">
           New here?{' '}
@@ -36,10 +35,10 @@ export default function SignInPage() {
             Your work, multiplied
           </div>
           <h1 className="max-w-lg text-5xl font-medium leading-[0.96] tracking-[-0.06em] sm:text-6xl lg:text-7xl">
-            Welcome back to your <span className="text-white/60">AI team.</span>
+            Welcome back to <span className="text-white/60">AgentU.</span>
           </h1>
           <p className="mt-7 max-w-md text-lg leading-8 text-white/60">
-            Sign in to pick up where you left off and keep your agents moving.
+            Pick up where you left off and keep your hiring workflows moving across your team.
           </p>
           <div className="mt-10 space-y-4">
             {benefits.map((benefit) => (
@@ -60,16 +59,6 @@ export default function SignInPage() {
             </div>
             <h2 className="text-2xl font-medium tracking-tight">Sign in</h2>
             <p className="mt-2 text-sm text-white/50">Access your workspace securely.</p>
-          </div>
-
-          <GoogleButton className="h-12 w-full border-white/15 bg-white/5 hover:bg-white/10">
-            Continue with Google
-          </GoogleButton>
-
-          <div className="my-6 flex items-center gap-3 text-xs text-white/35">
-            <span className="h-px flex-1 bg-white/10" />
-            OR CONTINUE WITH EMAIL
-            <span className="h-px flex-1 bg-white/10" />
           </div>
 
           <SignInForm />

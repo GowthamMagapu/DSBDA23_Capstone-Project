@@ -1,6 +1,5 @@
 import { type NextAuthConfig } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
-import Google from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
@@ -17,7 +16,7 @@ async function getPrisma() {
       user: { findUnique: async () => null, create: async () => ({}), update: async () => ({}) },
       account: { findUnique: async () => null, create: async () => ({}) },
       session: { findUnique: async () => null, create: async () => ({}) },
-    } as any
+    } as unknown as import('@prisma/client').PrismaClient
   }
   const { PrismaClient } = await import('@prisma/client')
   const databaseUrl = new URL(process.env.DATABASE_URL)
@@ -37,6 +36,12 @@ async function getPrisma() {
 }
 
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? 'dev-secret-change-me-please',
+  debug: process.env.NODE_ENV === 'development',
+  session: {
+    strategy: 'jwt',
+  },
   pages: {
     signIn: '/auth/signin',
     error: '/auth/signin',
@@ -90,17 +95,6 @@ export const authConfig: NextAuthConfig = {
     },
   },
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      authorization: {
-        params: {
-          scope: 'openid email profile',
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
-    }),
     Credentials({
       name: 'credentials',
       credentials: {

@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { signIn } from 'next-auth/react'
 import { cn } from '@/lib/utils'
 
 interface GoogleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean
+  provider?: 'google'
 }
 
 const googleSVG = (
@@ -33,6 +35,8 @@ export const GoogleButton = ({
   className,
   disabled,
   children = 'Continue with Google',
+  provider = 'google',
+  onClick,
   onMouseEnter,
   onMouseLeave,
   onMouseDown,
@@ -41,6 +45,17 @@ export const GoogleButton = ({
 }: GoogleButtonProps) => {
   const [isHovered, setIsHovered] = useState(false)
   const [isPressed, setIsPressed] = useState(false)
+
+  const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    onClick?.(event)
+
+    if (event.defaultPrevented) return
+    if (disabled || loading) return
+
+    await signIn(provider, {
+      callbackUrl: '/dashboard',
+    })
+  }
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
     setIsHovered(true)
@@ -67,6 +82,7 @@ export const GoogleButton = ({
 
   return (
     <button
+      type="button"
       className={cn(
         'w-full',
         'bg-white/5 hover:bg-white/10 border border-white/20',
@@ -78,6 +94,7 @@ export const GoogleButton = ({
       )}
       style={{ transform: `scale(${scale})` }}
       disabled={disabled || loading}
+      onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseDown={handleMouseDown}

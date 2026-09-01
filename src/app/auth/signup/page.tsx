@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, Check, Rocket, Sparkles } from 'lucide-react'
 import { SignUpForm } from '@/components/auth/SignUpForm'
-import { GoogleButton } from '@/components/auth/GoogleButton'
+
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +17,7 @@ export default function SignUpPage() {
       <header className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-6 py-5 lg:px-8">
         <Link href="/" className="flex items-center gap-3 text-[15px] font-medium">
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-sm text-black">✦</span>
-          <span>AI Agent</span>
+          <span>AgentU</span>
         </Link>
         <p className="text-sm text-white/55">
           Already have an account?{' '}
@@ -34,10 +34,10 @@ export default function SignUpPage() {
             Make room for better work
           </div>
           <h1 className="max-w-lg text-5xl font-medium leading-[0.96] tracking-[-0.06em] sm:text-6xl lg:text-7xl">
-            Create your <span className="text-white/60">AI team.</span>
+            Build your <span className="text-white/60">AI hiring team.</span>
           </h1>
           <p className="mt-7 max-w-md text-lg leading-8 text-white/60">
-            Turn repetitive hiring work into intelligent workflows that run alongside your team.
+            Turn repetitive hiring work into intelligent workflows that keep your recruiting pipeline moving.
           </p>
           <div className="mt-10 space-y-4">
             {benefits.map((benefit) => (
@@ -60,15 +60,6 @@ export default function SignUpPage() {
             <p className="mt-2 text-sm text-white/50">Set up your workspace and meet your AI teammates.</p>
           </div>
 
-          <GoogleButton className="h-12 w-full border-white/15 bg-white/5 hover:bg-white/10">
-            Continue with Google
-          </GoogleButton>
-
-          <div className="my-6 flex items-center gap-3 text-xs text-white/35">
-            <span className="h-px flex-1 bg-white/10" />
-            OR SIGN UP WITH EMAIL
-            <span className="h-px flex-1 bg-white/10" />
-          </div>
 
           <SignUpForm />
 

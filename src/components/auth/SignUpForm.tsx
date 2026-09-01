@@ -7,8 +7,6 @@ import { z } from 'zod'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from './PasswordInput'
 import { Link } from '@/components/ui/link'
-import { Separator } from '@/components/ui/separator'
-import { GoogleButton } from './GoogleButton'
 import { cn } from '@/lib/utils'
 import { Loader2, ArrowRight, Check, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -30,17 +28,6 @@ const signUpSchema = z.object({
 })
 
 type SignUpFormData = z.infer<typeof signUpSchema>
-
-type SignUpFormState = {
-  errors?: {
-    name?: string[]
-    email?: string[]
-    password?: string[]
-    confirmPassword?: string[]
-    _form?: string[]
-  }
-  message?: string
-}
 
 const passwordRequirements = [
   { label: 'At least 8 characters', regex: /.{8,}/ },
@@ -237,20 +224,6 @@ export const SignUpForm = () => {
           </motion.button>
         )}
       </AnimatePresence>
-
-      <div className="relative">
-        <Separator className="my-6" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/5 px-3 text-xs text-slate-500 font-medium">
-          OR
-        </div>
-      </div>
-
-      <GoogleButton
-        className="h-12"
-        disabled={isLoading || showSuccess}
-      >
-        Continue with Google
-      </GoogleButton>
 
       <p className="text-center text-sm text-slate-400">
         Already have an account?{' '}

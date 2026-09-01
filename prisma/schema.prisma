@@ -7,17 +7,21 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  passwordHash  String?
-  provider      String    @default("credentials")
-  profileImage  String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  accounts      Account[]
-  sessions      Session[]
+  id                 String    @id @default(cuid())
+  name               String?
+  email              String    @unique
+  emailVerified      DateTime?
+  passwordHash       String?
+  provider           String    @default("credentials")
+  profileImage       String?
+  resetToken         String?
+  resetTokenExpires  DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  accounts           Account[]
+  sessions           Session[]
+  jobs               Job[]
+  profiles           CandidateProfile[]
 }
 
 model Account {
@@ -53,4 +57,65 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Job {
+  id           String        @id @default(cuid())
+  title        String
+  description  String        @db.Text
+  requirements String        @db.Text
+  slug         String        @unique
+  listing      String?       @db.Text
+  tags         String?       @db.Text
+  status       String        @default("published")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  applications Application[]
+
+  @@index([ownerId])
+}
+
+model Application {
+  id            String   @id @default(cuid())
+  candidateName String
+  email         String
+  resumeText    String   @db.Text
+  coverLetter   String?  @db.Text
+  resumeFileName String?
+  resumeMimeType String?
+  resumeData    Bytes?   @db.LongBlob
+  score         Int      @default(0)
+  status        String   @default("review")
+  aiSummary     String?  @db.Text
+  matchedSkills String?  @db.Text
+  missingSkills String?  @db.Text
+  source        String   @default("public")
+  createdAt     DateTime @default(now())
+  jobId         String
+  job           Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  profileId     String?
+  profile       CandidateProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+  @@index([score])
+}
+
+model CandidateProfile {
+  id             String        @id @default(cuid())
+  name           String
+  email          String        @unique
+  resumeText     String        @db.Text
+  coverLetter    String        @db.Text
+  resumeFileName String
+  resumeMimeType String
+  resumeData     Bytes         @db.LongBlob
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  ownerId        String?
+  owner          User?         @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  applications   Application[]
+
+  @@index([ownerId])
 }
