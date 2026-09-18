@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 1080" width="1320" height="1080" role="img" aria-label="Sequence diagram of the job publishing pipeline: the recruiter's request drafts a listing with Gemini, persists the job, posts to LinkedIn and returns 201; email and candidate-pool re-scoring then run after the response via the Next.js after hook, while every step appends an AgentEvent that the dashboard polls.">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1d23"/>
+    </marker>
+    <marker id="aDash" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5b6472"/>
+    </marker>
+    <marker id="aHot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b1500f"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1320" height="1080" fill="#ffffff"/>
+
+  <text x="28" y="36" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="22" font-weight="600" fill="#1a1d23">Agent Pipeline — Publishing a Job (POST /api/jobs)</text>
+  <text x="28" y="58" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#5b6472">Work is split at the response boundary: what the recruiter must wait for runs in-request; everything else runs in a Next.js after() hook and reports progress through the event log.</text>
+
+  <!-- phase backgrounds (drawn first so lifelines sit on top) -->
+  <rect x="20" y="146" width="1280" height="424" rx="10" fill="#f7f9fb"/>
+  <rect x="20" y="594" width="1280" height="312" rx="10" fill="#faf6fb"/>
+  <rect x="20" y="922" width="1280" height="78" rx="10" fill="#f7f9fb"/>
+
+  <!-- participants -->
+  <rect x="25" y="76" width="190" height="52" rx="8" fill="#ffffff" stroke="#c8d0da"/>
+  <text x="120" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">Recruiter</text>
+  <text x="120" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">/dashboard</text>
+
+  <rect x="255" y="76" width="190" height="52" rx="8" fill="#ffffff" stroke="#c8d0da"/>
+  <text x="350" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">POST /api/jobs</text>
+  <text x="350" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">route handler</text>
+
+  <rect x="495" y="76" width="190" height="52" rx="8" fill="#fdf6f1" stroke="#d8a97f"/>
+  <text x="590" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">Gemini</text>
+  <text x="590" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">generateContent</text>
+
+  <rect x="695" y="76" width="190" height="52" rx="8" fill="#eef3fa" stroke="#9db6d6"/>
+  <text x="790" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">Database</text>
+  <text x="790" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">Prisma / MariaDB</text>
+
+  <rect x="895" y="76" width="190" height="52" rx="8" fill="#fdf6f1" stroke="#d8a97f"/>
+  <text x="990" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">LinkedIn</text>
+  <text x="990" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">UGC posts API</text>
+
+  <rect x="1095" y="76" width="190" height="52" rx="8" fill="#fdf6f1" stroke="#d8a97f"/>
+  <text x="1190" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">SMTP</text>
+  <text x="1190" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">nodemailer</text>
+
+  <!-- lifelines -->
+  <line x1="120" y1="128" x2="120" y2="1000" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="350" y1="128" x2="350" y2="1000" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="590" y1="128" x2="590" y2="1000" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="790" y1="128" x2="790" y2="1000" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="990" y1="128" x2="990" y2="1000" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="1190" y1="128" x2="1190" y2="1000" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+
+  <!-- ============ PHASE 1: in-request ============ -->
+  <text x="32" y="166" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#5b6472" letter-spacing="0.5">IN-REQUEST — the recruiter is waiting</text>
+
+  <line x1="120" y1="192" x2="344" y2="192" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="128" y="187" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">POST { title, description, requirements, autoApplyExistingCandidates }</text>
+
+  <rect x="358" y="204" width="300" height="34" rx="6" fill="#ffffff" stroke="#c8d0da"/>
+  <text x="368" y="225" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">auth() session → 401 · Zod jobSchema → 400</text>
+
+  <line x1="350" y1="264" x2="784" y2="264" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="259" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">company.findUnique({ ownerId })</text>
+
+  <line x1="790" y1="290" x2="356" y2="290" stroke="#5b6472" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#aDash)"/>
+  <text x="358" y="285" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#5b6472">company brief — absent → 400 &quot;tell the agent about your company first&quot;</text>
+
+  <line x1="350" y1="320" x2="784" y2="320" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="315" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">AgentEvent ← job.drafting</text>
+
+  <line x1="350" y1="350" x2="584" y2="350" stroke="#b1500f" stroke-width="1.6" marker-end="url(#aHot)"/>
+  <text x="358" y="345" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#b1500f">generateJobListing(company + role)</text>
+
+  <line x1="590" y1="380" x2="356" y2="380" stroke="#5b6472" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#aDash)"/>
+  <text x="358" y="375" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#5b6472">{ headline, listing, tags }  —  on failure: template listing, aiGenerated = false</text>
+
+  <line x1="350" y1="410" x2="784" y2="410" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="405" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">job.create — slug = headline + random suffix (unique public URL)</text>
+
+  <line x1="350" y1="438" x2="784" y2="438" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="433" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">AgentEvent ← job.published (public link)</text>
+
+  <line x1="350" y1="468" x2="984" y2="468" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="463" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">shareJobOnLinkedIn — access token decrypted by secret-box (AES-256-GCM)</text>
+
+  <line x1="990" y1="496" x2="356" y2="496" stroke="#5b6472" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#aDash)"/>
+  <text x="358" y="491" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#5b6472">posted | skipped (not connected) | failed — never aborts the publish</text>
+
+  <line x1="350" y1="526" x2="784" y2="526" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="521" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">job.update(linkedinStatus, postUrl) + AgentEvent ← linkedin.&lt;status&gt;</text>
+
+  <line x1="344" y1="556" x2="126" y2="556" stroke="#b1500f" stroke-width="2" marker-end="url(#aHot)"/>
+  <text x="128" y="551" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#b1500f">201 Created { job, publicUrl, linkedinPost }</text>
+
+  <!-- response boundary -->
+  <line x1="20" y1="582" x2="1300" y2="582" stroke="#b1500f" stroke-width="1.8" stroke-dasharray="8 5"/>
+  <rect x="452" y="570" width="420" height="24" rx="6" fill="#ffffff" stroke="#b1500f"/>
+  <text x="662" y="587" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#b1500f">RESPONSE SENT — the recruiter is unblocked here</text>
+
+  <!-- ============ PHASE 2: after() ============ -->
+  <text x="32" y="616" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#6d4a86" letter-spacing="0.5">POST-RESPONSE — Next.js after() · any throw here is caught and logged as agent.error; the published job is unaffected</text>
+
+  <line x1="350" y1="646" x2="1184" y2="646" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="641" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">notifyJobPublished — public link + LinkedIn outcome</text>
+
+  <line x1="350" y1="674" x2="784" y2="674" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="669" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">AgentEvent ← email sent / skipped (SMTP unset = skipped, not an error)</text>
+
+  <rect x="332" y="690" width="640" height="20" rx="4" fill="#f1e9f5"/>
+  <text x="342" y="705" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-style="italic" fill="#6d4a86">opt — only when autoApplyExistingCandidates = true</text>
+
+  <line x1="350" y1="732" x2="784" y2="732" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="727" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">candidateProfile.findMany({ ownerId }) + AgentEvent ← pool.scoring (N)</text>
+
+  <rect x="332" y="746" width="640" height="94" rx="7" fill="none" stroke="#a98bbd" stroke-dasharray="6 4"/>
+  <rect x="332" y="746" width="252" height="20" rx="4" fill="#a98bbd"/>
+  <text x="342" y="761" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#ffffff">loop — runWithConcurrency(profiles, limit 3)</text>
+
+  <line x1="350" y1="792" x2="584" y2="792" stroke="#b1500f" stroke-width="1.6" marker-end="url(#aHot)"/>
+  <text x="358" y="787" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#b1500f">analyzeApplication(resume, reqs)</text>
+
+  <line x1="350" y1="826" x2="784" y2="826" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="821" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">application.create(score, status, matched / missing skills)</text>
+
+  <line x1="350" y1="864" x2="784" y2="864" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="859" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">AgentEvent ← pool.scored</text>
+
+  <line x1="350" y1="892" x2="1184" y2="892" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="887" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">notifyCandidatePoolScored — ranked summary of the re-scored pool</text>
+
+  <!-- ============ PHASE 3: feed ============ -->
+  <text x="32" y="944" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#5b6472" letter-spacing="0.5">MEANWHILE — the dashboard projects the event log</text>
+
+  <line x1="120" y1="970" x2="344" y2="970" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="358" y="966" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">GET /api/agent/events?since=&lt;newest seen&gt; — polled every 5 s, 40 rows max</text>
+  <text x="358" y="984" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#5b6472">every AgentEvent written above appears here; arriving job events also refresh the job card</text>
+
+  <!-- key claim -->
+  <rect x="20" y="1008" width="1280" height="54" rx="8" fill="#f7f9fb" stroke="#dde3ea"/>
+  <text x="32" y="1030" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1a1d23"><tspan font-weight="700" fill="#5b6472">DESIGN CLAIM — </tspan>the agent never reports progress by returning it. Each step appends to an append-only AgentEvent log,</text>
+  <text x="32" y="1050" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1a1d23">and the dashboard feed is a projection of that log, so a step that runs after the response is as visible as one that runs before it.</text>
+</svg>

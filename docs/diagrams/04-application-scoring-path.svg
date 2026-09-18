@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 940" width="1320" height="940" role="img" aria-label="Sequence diagram of the candidate application path: rate limiting and validation, resume text extraction, an in-request Gemini screening call, persistence and an event log entry before the 201 response, with the recruiter email deferred to the after hook. Three measured weaknesses are annotated at the points where they occur.">
+  <defs>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1d23"/>
+    </marker>
+    <marker id="bDash" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5b6472"/>
+    </marker>
+    <marker id="bHot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b1500f"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1320" height="940" fill="#ffffff"/>
+
+  <text x="28" y="36" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="22" font-weight="600" fill="#1a1d23">Application Scoring Path (POST /api/jobs/[jobId]/applications)</text>
+  <text x="28" y="58" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#5b6472">The public, unauthenticated entry point. Unlike publishing, the AI call runs <tspan font-style="italic">inside</tspan> the request — the candidate waits for it. Red callouts mark weaknesses measured in the evaluation.</text>
+
+  <rect x="20" y="146" width="1280" height="566" rx="10" fill="#f7f9fb"/>
+  <rect x="20" y="736" width="1280" height="76" rx="10" fill="#faf6fb"/>
+
+  <!-- participants -->
+  <rect x="25" y="76" width="190" height="52" rx="8" fill="#ffffff" stroke="#c8d0da"/>
+  <text x="120" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">Candidate</text>
+  <text x="120" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">public apply page</text>
+
+  <rect x="265" y="76" width="190" height="52" rx="8" fill="#ffffff" stroke="#c8d0da"/>
+  <text x="360" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">Route handler</text>
+  <text x="360" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">applications/route.ts</text>
+
+  <rect x="505" y="76" width="190" height="52" rx="8" fill="#ffffff" stroke="#c8d0da"/>
+  <text x="600" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">Extractor</text>
+  <text x="600" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">resume-text.ts</text>
+
+  <rect x="705" y="76" width="190" height="52" rx="8" fill="#fdf6f1" stroke="#d8a97f"/>
+  <text x="800" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">Gemini</text>
+  <text x="800" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">screening call</text>
+
+  <rect x="905" y="76" width="190" height="52" rx="8" fill="#eef3fa" stroke="#9db6d6"/>
+  <text x="1000" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">Database</text>
+  <text x="1000" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">Prisma / MariaDB</text>
+
+  <rect x="1105" y="76" width="190" height="52" rx="8" fill="#fdf6f1" stroke="#d8a97f"/>
+  <text x="1200" y="99" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1a1d23">SMTP</text>
+  <text x="1200" y="116" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5b6472">nodemailer</text>
+
+  <!-- lifelines -->
+  <line x1="120" y1="128" x2="120" y2="812" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="360" y1="128" x2="360" y2="812" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="600" y1="128" x2="600" y2="812" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="800" y1="128" x2="800" y2="812" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="1000" y1="128" x2="1000" y2="812" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="1200" y1="128" x2="1200" y2="812" stroke="#c8d0da" stroke-width="1.2" stroke-dasharray="4 4"/>
+
+  <text x="32" y="166" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#5b6472" letter-spacing="0.5">IN-REQUEST — the candidate is waiting</text>
+
+  <line x1="120" y1="190" x2="354" y2="190" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#b)"/>
+  <text x="128" y="185" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">multipart/form-data — resume file + name, email, cover letter</text>
+
+  <rect x="368" y="202" width="470" height="54" rx="6" fill="#ffffff" stroke="#c8d0da"/>
+  <text x="378" y="221" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">checkRateLimit(&quot;apply:&lt;ip&gt;&quot;, 5 per 15 min) → 429</text>
+  <text x="378" y="238" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">file present · ≤ 10 MB · extension allowlist → 400</text>
+  <text x="378" y="252" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#5b6472">Zod: name ≥ 2, valid email, cover letter 30–8000 chars → 400</text>
+
+  <line x1="360" y1="286" x2="994" y2="286" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#b)"/>
+  <text x="368" y="281" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">job.findFirst({ id | slug, status: &quot;published&quot; }) — unknown or unpublished → 404</text>
+
+  <line x1="360" y1="316" x2="594" y2="316" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#b)"/>
+  <text x="368" y="311" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">extractResumeText(file, buffer)</text>
+
+  <rect x="470" y="328" width="600" height="58" rx="6" fill="#fdf2ef" stroke="#c9694a"/>
+  <text x="482" y="346" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#a03a1d">F7 — silent extraction failure</text>
+  <text x="482" y="363" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">PDF → pdf-parse · DOCX → mammoth · text → utf8 · anything else → &quot;&quot;.</text>
+  <text x="482" y="378" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">No OCR and no minimum-content check: measured 78.6% usable against a 100% parse rate.</text>
+
+  <line x1="600" y1="398" x2="366" y2="398" stroke="#5b6472" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#bDash)"/>
+  <text x="368" y="393" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#5b6472">extracted text — concatenated with the cover letter, capped at 20 000 chars</text>
+
+  <line x1="360" y1="428" x2="794" y2="428" stroke="#b1500f" stroke-width="1.8" marker-end="url(#bHot)"/>
+  <text x="368" y="423" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#b1500f">analyzeApplication(resumeText, title, requirements)</text>
+
+  <rect x="470" y="440" width="600" height="60" rx="6" fill="#fdf2ef" stroke="#c9694a"/>
+  <text x="482" y="458" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#a03a1d">F6 — prompt-injection surface</text>
+  <text x="482" y="475" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">Candidate-supplied text is concatenated straight into the prompt, on the same channel as the screening</text>
+  <text x="482" y="491" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">instructions. A forged &quot;SYSTEM:&quot; line moved an unrelated candidate from 0 to 95. Unmitigated.</text>
+
+  <line x1="800" y1="528" x2="366" y2="528" stroke="#5b6472" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#bDash)"/>
+  <text x="368" y="523" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#5b6472">{ score, aiSummary, matchedSkills, missingSkills } → band: ≥70 selected · ≥40 review · else rejected</text>
+
+  <rect x="470" y="540" width="600" height="58" rx="6" fill="#fdf2ef" stroke="#c9694a"/>
+  <text x="482" y="558" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#a03a1d">F8 — silent degradation</text>
+  <text x="482" y="575" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">Any failure (quota, network, malformed JSON) is caught and keyword-overlap scores</text>
+  <text x="482" y="590" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">are returned with an empty summary. No user-visible signal that the AI never ran.</text>
+
+  <line x1="360" y1="610" x2="994" y2="610" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#b)"/>
+  <text x="368" y="605" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">candidateProfile.upsert({ where: { email } }) — builds the reusable talent pool</text>
+
+  <line x1="360" y1="640" x2="994" y2="640" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#b)"/>
+  <text x="368" y="635" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">application.create — score, status, skills, and the resume bytes as LongBlob</text>
+
+  <line x1="360" y1="668" x2="994" y2="668" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#b)"/>
+  <text x="368" y="663" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">AgentEvent ← application.scored (level success when selected)</text>
+
+  <line x1="354" y1="698" x2="126" y2="698" stroke="#b1500f" stroke-width="2" marker-end="url(#bHot)"/>
+  <text x="128" y="693" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#b1500f">201 { id, &quot;Application received&quot; }</text>
+
+  <line x1="20" y1="724" x2="1300" y2="724" stroke="#b1500f" stroke-width="1.8" stroke-dasharray="8 5"/>
+  <rect x="452" y="712" width="420" height="24" rx="6" fill="#ffffff" stroke="#b1500f"/>
+  <text x="662" y="729" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#b1500f">RESPONSE SENT — the candidate is unblocked here</text>
+
+  <text x="32" y="758" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#6d4a86" letter-spacing="0.5">POST-RESPONSE — Next.js after()</text>
+
+  <line x1="360" y1="788" x2="1194" y2="788" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#b)"/>
+  <text x="368" y="783" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">notifyNewApplication — score, AI evaluation, matched and missing skills to the recruiter</text>
+
+  <!-- contrast note -->
+  <rect x="20" y="826" width="1280" height="94" rx="8" fill="#f7f9fb" stroke="#dde3ea"/>
+  <text x="32" y="848" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#5b6472" letter-spacing="0.5">CONTRAST WITH THE PUBLISH PIPELINE</text>
+  <text x="32" y="868" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">Publishing defers its AI work to after(); this path does not. Extraction and the Gemini call sit between the candidate and their</text>
+  <text x="32" y="886" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">confirmation, so the applicant waits on a third-party model — measured p50 1335 ms, p95 1995 ms.</text>
+  <text x="32" y="908" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#5b6472">The score is needed before the row is written, so the ordering is deliberate; deferring it would return 201 faster but leave the application briefly unscored.</text>
+</svg>
