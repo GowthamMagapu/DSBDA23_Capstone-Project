@@ -1,0 +1,32 @@
+Rohit Menon
+Pune, India | rohit.menon@example.com
+
+PROFILE
+Passionate and dynamic technology enthusiast seeking challenging opportunities in a
+reputed organisation to utilise my skills.
+
+TECHNICAL SKILLS
+React, React Native, Angular, Vue, Svelte, TypeScript, JavaScript, Next.js, Nuxt,
+Node.js, Express, Fastify, NestJS, Python, Django, Flask, FastAPI, Java, Spring Boot,
+C++, C#, .NET, Go, Rust, Ruby on Rails, PHP, Laravel, PostgreSQL, MySQL, MongoDB,
+Redis, Cassandra, DynamoDB, Elasticsearch, Prisma, Sequelize, TypeORM, Hibernate,
+GraphQL, REST API design, gRPC, WebSockets, Kafka, RabbitMQ, Redux, Zustand, MobX,
+Tailwind CSS, Sass, Bootstrap, Material UI, Jest, Mocha, Cypress, Playwright, Selenium,
+React Testing Library, JUnit, PyTest, Core Web Vitals, WCFG accessibility, responsive
+layout, design systems, Storybook, Webpack, Vite, Rollup, Babel, Docker, Kubernetes,
+Helm, Terraform, Ansible, Jenkins, GitHub Actions, GitLab CI, CircleCI, AWS, EC2, S3,
+VPC, IAM, RDS, Lambda, Azure, GCP, Linux, Bash, networking, Prometheus, Grafana,
+PyTorch, TensorFlow, scikit-learn, Keras, Hugging Face Transformers, spaCy, NLTK, NLP,
+OpenCV, Pandas, NumPy, Airflow, MLflow, Spark, Hadoop, Tableau, Power BI, Figma, Git,
+Jira, Agile, Scrum, observability, authentication, authorisation, OAuth, JWT, RBAC,
+schema design, indexing, query optimisation, microservices, system design
+
+PROJECTS
+- Portfolio website built with HTML and CSS.
+- To-do list application (tutorial follow-along).
+- College mini-project: library management system in PHP.
+
+EDUCATION
+B.Tech Information Technology, 2024. CGPA 6.8/10.
+
+No professional work experience yet.

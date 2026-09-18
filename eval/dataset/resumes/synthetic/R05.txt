@@ -1,0 +1,33 @@
+Tomasz Wisniewski
+Warsaw, Poland | tomasz.wisniewski@example.com
+
+SUMMARY
+Infrastructure engineer, 8 years running production systems on AWS. Kubernetes operator
+by day, Terraform author by habit. Have carried the pager for systems with a 99.95% SLO.
+
+EXPERIENCE
+Senior Cloud Infrastructure Engineer, Kestrel Media (2020 - present)
+- Own a multi-account AWS estate (EC2, VPC peering, IAM, RDS Postgres, S3, CloudFront)
+  under AWS Organizations with SCP guardrails.
+- Operate three EKS clusters (450 pods) across staging and production; authored the
+  Helm chart library and the cluster upgrade runbook.
+- All infrastructure in Terraform: 40+ modules, remote state in S3 with DynamoDB
+  locking, plan/apply gated through CI.
+- Rebuilt CI/CD on GitHub Actions and Argo CD: deploy lead time from 40 minutes to
+  6 minutes, with progressive rollout and automated rollback.
+- Cut monthly AWS spend 34% via rightsizing, Savings Plans, and S3 lifecycle policy.
+- Incident commander rotation; wrote the postmortem template still in use.
+- Hardened the estate for SOC 2: IMDSv2 enforcement, secret rotation, least-privilege
+  IAM review, CIS benchmark remediation.
+
+Systems Engineer, Polaris Telecom (2016 - 2020)
+- Linux fleet administration (RHEL), BGP and VPN networking, Nagios to Prometheus
+  migration.
+
+SKILLS
+AWS (EC2, VPC, IAM, RDS, S3, EKS, CloudFront, Route 53), Kubernetes, EKS, Helm,
+Terraform, GitHub Actions, Argo CD, Docker, Linux (RHEL/Ubuntu), networking, Istio,
+Prometheus, Grafana, Loki, PagerDuty, incident response, cost optimisation
+
+CERTIFICATIONS
+AWS Solutions Architect - Professional; Certified Kubernetes Administrator (CKA)

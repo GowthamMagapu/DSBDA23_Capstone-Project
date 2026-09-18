@@ -1,0 +1,29 @@
+Daniel Okafor
+Manchester, UK | daniel.okafor@example.com
+
+SUMMARY
+Career-changer, 14 months into frontend development after a 16-week intensive
+bootcamp. Comfortable building React interfaces from a design; still developing depth
+in testing and performance work.
+
+EXPERIENCE
+Junior Frontend Developer, Halden Digital (2024 - present)
+- Build marketing pages and internal tools in React with TypeScript.
+- Translate Figma designs into responsive layouts with Tailwind CSS.
+- Pair with senior engineers on feature work; contribute to code review.
+- Wrote my first component tests this year using React Testing Library.
+
+Retail Operations Supervisor, Brightside Stores (2017 - 2023)
+- Managed a team of nine; rota planning, stock control, customer escalation.
+
+PROJECTS
+- Recipe organiser: React + TypeScript SPA with local persistence and search.
+- Weather dashboard consuming a public REST API, deployed on Netlify.
+
+SKILLS
+React, TypeScript (learning), JavaScript, HTML, CSS, Tailwind CSS, Git,
+responsive design, REST APIs, basic React Testing Library
+
+EDUCATION
+Northcoders Frontend Bootcamp, 2024
+BA Geography, University of Leeds, 2017

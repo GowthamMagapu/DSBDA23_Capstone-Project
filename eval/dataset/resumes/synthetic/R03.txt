@@ -1,0 +1,29 @@
+Mariana Silva
+Lisbon, Portugal | mariana.silva@example.com
+
+SUMMARY
+Backend engineer, 7 years building Node.js services against PostgreSQL. Comfortable
+owning a service end to end: schema, API surface, auth, deploy, and the pager.
+
+EXPERIENCE
+Backend Engineer, Caldera Payments (2020 - present)
+- Own four Node.js (TypeScript) services handling ~3k requests/second at peak.
+- Designed the ledger schema in PostgreSQL; partitioned the transactions table and
+  rewrote the reconciliation query path, cutting p95 from 2.4s to 180ms via composite
+  indexes and removing an N+1 access pattern.
+- Built the OAuth 2.0 authorisation server and the role-based permission model used
+  across the platform.
+- Introduced Prisma as the ORM and migrated 60+ raw SQL call sites.
+- Set up structured logging, tracing and RED dashboards; on-call rotation owner.
+- Moved asynchronous settlement work onto RabbitMQ to decouple it from request path.
+
+Software Engineer, Vela Logistics (2017 - 2020)
+- REST APIs in Express against PostgreSQL; Dockerised the local dev environment.
+
+SKILLS
+Node.js, TypeScript, Express, Fastify, PostgreSQL, schema design, indexing, query
+optimisation, Prisma, REST API design, OAuth 2.0, JWT, RBAC, Jest, integration testing,
+OpenTelemetry, RabbitMQ, Docker, Kubernetes (basic)
+
+EDUCATION
+MSc Software Engineering, Instituto Superior Tecnico, 2017

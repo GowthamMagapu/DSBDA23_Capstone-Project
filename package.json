@@ -11,7 +11,15 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "eval": "tsx --env-file=.env eval/run.ts all",
+    "eval:e1": "tsx --env-file=.env eval/run.ts e1",
+    "eval:e2": "tsx --env-file=.env eval/run.ts e2",
+    "eval:e3": "tsx --env-file=.env eval/run.ts e3",
+    "eval:e4": "tsx --env-file=.env eval/run.ts e4",
+    "eval:e5": "tsx --env-file=.env eval/run.ts e5",
+    "test": "tsx --test tests/*.test.ts",
+    "test:watch": "tsx --test --watch tests/*.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -46,6 +54,7 @@
     "eslint-config-next": "15.5.23",
     "prisma": "^7.9.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

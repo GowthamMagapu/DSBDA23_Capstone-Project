@@ -1,0 +1,49 @@
+jobId,resumeId,humanLabel,humanFit,note
+J1,R01,selected,4,Senior React/TS with design system, perf and a11y ownership - direct hit
+J1,R02,review,2,Relevant React/TS but 14 months against a 3+ year bar
+J1,R03,rejected,0,Backend specialist, no frontend work
+J1,R04,rejected,0,ML engineer, no frontend work
+J1,R05,rejected,0,Infrastructure engineer, no frontend work
+J1,R06,rejected,1,ADVERSARIAL: lists every required frontend term but has no professional experience
+J1,R07,review,3,ADVERSARIAL: 5yr component/TS/perf/a11y depth in Vue not React - transferable, worth interviewing
+J1,R08,review,2,Generalist with real React exposure but shallow depth
+J1,R09,rejected,0,Accountant, unrelated field
+J1,R10,rejected,0,NLP researcher, no frontend work
+J1,R11,rejected,1,Relevant coursework and internship but no professional experience
+J1,R12,rejected,0,Backend/ML, no frontend work
+J2,R01,rejected,0,Frontend specialist, no backend ownership
+J2,R02,rejected,0,Junior frontend, no backend work
+J2,R03,selected,4,7yr Node/Postgres with indexing, auth, ORM, queues and observability - direct hit
+J2,R04,rejected,1,Strong Python backend-adjacent work but not Node.js
+J2,R05,rejected,1,Operates databases but does not build services
+J2,R06,rejected,1,ADVERSARIAL: lists every required backend term but has no professional experience
+J2,R07,rejected,0,Frontend specialist, no backend work
+J2,R08,review,2,Real Node/Postgres experience but explicitly no tuning or indexing depth
+J2,R09,rejected,0,Accountant, unrelated field
+J2,R10,rejected,0,Researcher, no service engineering
+J2,R11,rejected,1,Node/Postgres in projects only, no professional experience
+J2,R12,selected,4,9yr backend with deep Postgres, auth and Node - exceeds the bar
+J3,R01,rejected,0,Frontend specialist, no ML
+J3,R02,rejected,0,Junior frontend, no ML
+J3,R03,rejected,0,Backend specialist, no Python or ML
+J3,R04,selected,4,Production NLP end to end with evaluation, deployment and drift monitoring - direct hit
+J3,R05,rejected,0,Infrastructure engineer, no ML
+J3,R06,rejected,1,ADVERSARIAL: lists PyTorch TensorFlow Transformers spaCy NLP but has no professional experience
+J3,R07,rejected,0,Frontend specialist, no ML
+J3,R08,rejected,0,Generalist, no ML
+J3,R09,rejected,0,Accountant, unrelated field
+J3,R10,review,2,Deep transformer and evaluation expertise but explicitly no production deployment
+J3,R11,rejected,1,One coursework fine-tune, no professional experience
+J3,R12,selected,3,Shipped and monitors a production NLP classifier with real evaluation discipline
+J4,R01,rejected,0,Frontend specialist, no infrastructure
+J4,R02,rejected,0,Junior frontend, no infrastructure
+J4,R03,rejected,1,Consumes infrastructure, does not operate it
+J4,R04,rejected,1,Uses Docker and Kubernetes but does not own infrastructure
+J4,R05,selected,4,8yr AWS, EKS, Terraform, CI/CD, cost and security with CKA - direct hit
+J4,R06,rejected,1,ADVERSARIAL: lists AWS Kubernetes Terraform Linux Prometheus but has no professional experience
+J4,R07,rejected,0,Frontend specialist, no infrastructure
+J4,R08,rejected,0,Heroku deploy scripts only
+J4,R09,rejected,0,Accountant, unrelated field
+J4,R10,rejected,0,SLURM batch jobs only, no cloud infrastructure
+J4,R11,rejected,0,Single Docker container on a VM
+J4,R12,review,2,Genuinely owns Kubernetes and Terraform but as a backend engineer, not an infra specialist

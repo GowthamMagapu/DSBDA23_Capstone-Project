@@ -1,0 +1,31 @@
+Priya Raghavan
+Bengaluru, India | priya.raghavan@example.com
+
+PROFESSIONAL SUMMARY
+Frontend engineer with 6 years building and maintaining large React applications in
+TypeScript. Led the migration of a 200-screen product to a shared component library and
+cut median page load from 4.1s to 1.3s.
+
+EXPERIENCE
+Senior Frontend Engineer, Northwind Commerce (2021 - present)
+- Own the checkout and account surfaces of a React 18 + TypeScript storefront serving
+  1.2M monthly users.
+- Designed and shipped the company design system (42 components) with Storybook docs
+  and visual regression tests; adopted by four product teams.
+- Drove Core Web Vitals work: LCP from 4.1s to 1.3s, CLS to 0.02, via route-level code
+  splitting, image policy, and font loading strategy.
+- Introduced React Testing Library across the codebase; component coverage 31% to 78%.
+- Remediated the account area to WCAG 2.1 AA following an external audit: keyboard
+  traps, focus order, ARIA labelling, contrast.
+
+Frontend Engineer, Trellis Analytics (2019 - 2021)
+- Built dashboard interfaces in React with Redux Toolkit; complex filtering and charting.
+- Converted the codebase from JavaScript to TypeScript incrementally in strict mode.
+
+SKILLS
+React, TypeScript, JavaScript, Next.js, CSS / Sass / Tailwind, responsive layout,
+Redux Toolkit, React Query, React Testing Library, Jest, Playwright, Webpack, Vite,
+accessibility (WCAG 2.1), Core Web Vitals, Figma
+
+EDUCATION
+B.E. Computer Science, PES University, 2019

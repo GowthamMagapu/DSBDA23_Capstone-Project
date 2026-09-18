@@ -1,0 +1,27 @@
+James Whitcombe
+Austin, TX | james.whitcombe@example.com
+
+SUMMARY
+Full-stack developer, 4 years at small companies where I have touched most of the stack.
+Generalist rather than specialist: competent across frontend and backend without deep
+ownership of either.
+
+EXPERIENCE
+Full-Stack Developer, Redpoint Software (2022 - present)
+- Build features across a React frontend and a Node.js/Express backend for a B2B
+  scheduling product (team of five engineers).
+- Work with PostgreSQL through Sequelize; write straightforward queries and migrations.
+  Have not done performance tuning or indexing work beyond adding obvious indexes.
+- Implemented session-based login and a simple admin/user permission check.
+- Some TypeScript on newer modules; much of the codebase is still plain JavaScript.
+- Wrote the deployment scripts for our Heroku environment.
+
+Web Developer, Callaway Marketing (2020 - 2022)
+- WordPress and custom PHP sites; jQuery frontend work.
+
+SKILLS
+JavaScript, React, Node.js, Express, PostgreSQL, Sequelize, TypeScript (working
+knowledge), HTML, CSS, Bootstrap, REST APIs, Git, Heroku, some Docker, PHP, jQuery
+
+EDUCATION
+BS Information Systems, Texas State University, 2020

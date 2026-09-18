@@ -1,0 +1,26 @@
+[
+  {
+    "id": "J1",
+    "title": "Frontend Engineer (React & TypeScript)",
+    "description": "We are looking for a frontend engineer to own customer-facing product surfaces in our web application. You will build accessible, performant interfaces, collaborate closely with design, and help shape our component library.",
+    "requirements": "3+ years building production React applications. Strong TypeScript. Experience with modern CSS and responsive layout. Familiarity with state management, component testing, and web performance (Core Web Vitals). Accessibility awareness (WCAG). Nice to have: Next.js, design systems."
+  },
+  {
+    "id": "J2",
+    "title": "Backend Engineer (Node.js & PostgreSQL)",
+    "description": "Join our platform team to design and operate the APIs behind our product. You will model data, write resilient services, and own reliability for the endpoints you ship.",
+    "requirements": "3+ years backend development with Node.js. Strong relational database skills with PostgreSQL, including schema design, indexing, and query optimisation. REST API design. Experience with authentication and authorisation. Testing and observability. Nice to have: Prisma or another ORM, message queues, Docker."
+  },
+  {
+    "id": "J3",
+    "title": "Machine Learning Engineer (NLP)",
+    "description": "We are hiring an ML engineer to build and ship natural language processing features into production. You will own models end to end, from data preparation through deployment and monitoring.",
+    "requirements": "Strong Python. Practical NLP experience with transformer models. Experience deploying models to production and monitoring them. Familiarity with PyTorch or TensorFlow. Data pipeline skills. Evaluation methodology and offline/online metrics. Nice to have: LLM prompting and fine-tuning, vector databases, MLOps tooling."
+  },
+  {
+    "id": "J4",
+    "title": "Cloud Infrastructure Engineer (AWS & Kubernetes)",
+    "description": "Own the infrastructure our product runs on. You will manage our AWS footprint, operate Kubernetes clusters, and build the CI/CD paths our engineers ship through.",
+    "requirements": "3+ years operating production infrastructure on AWS (EC2, VPC, IAM, RDS, S3). Kubernetes in production. Infrastructure as code with Terraform. CI/CD pipeline design. Linux administration and networking. Monitoring and incident response. Nice to have: service mesh, cost optimisation, security hardening."
+  }
+]

@@ -1,0 +1,33 @@
+Olumide Adeyemi
+Lagos, Nigeria | olumide.adeyemi@example.com
+
+SUMMARY
+Backend engineer with 9 years of production experience, the last two spent moving
+deliberately into applied machine learning. Deep systems and data background; my ML
+work is real but newer than my backend work.
+
+EXPERIENCE
+Staff Backend Engineer, Kudi Financial (2018 - present)
+- Lead backend engineer for the core transaction platform: Node.js and Python services
+  on PostgreSQL, 8M accounts.
+- Designed the event-sourced ledger schema; heavy indexing and query optimisation work.
+- Built and now own the fraud-scoring service: feature pipeline in Python, gradient
+  boosted model, served behind a FastAPI endpoint with latency budget under 80ms.
+- Added an NLP component to the dispute-handling flow: fine-tuned a DistilBERT
+  classifier to route free-text customer complaints; established the holdout evaluation
+  and tracked precision at the routing threshold in production.
+- Set up model monitoring: input drift, prediction distribution, and weekly retraining
+  with MLflow tracking.
+- Run the Kubernetes deployment for both services; Terraform for the AWS footprint.
+
+Backend Engineer, Interswitch (2016 - 2018)
+- Payment integration services in Java and Python; REST API design.
+
+SKILLS
+Python, Node.js, TypeScript, PostgreSQL (schema design, indexing, optimisation),
+FastAPI, Express, PyTorch, Hugging Face Transformers, scikit-learn, XGBoost, MLflow,
+Airflow, feature pipelines, model monitoring, REST API design, OAuth 2.0, Docker,
+Kubernetes, Terraform, AWS, Prometheus
+
+EDUCATION
+BSc Computer Engineering, University of Lagos, 2016

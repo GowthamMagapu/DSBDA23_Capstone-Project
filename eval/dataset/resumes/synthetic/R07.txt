@@ -1,0 +1,30 @@
+Elodie Bernard
+Lyon, France | elodie.bernard@example.com
+
+SUMMARY
+Frontend engineer with 5 years building single-page applications. My production
+experience is in the Vue ecosystem; I am equally interested in roles on other component
+frameworks and have been building with the newer React APIs in personal work.
+
+EXPERIENCE
+Frontend Engineer, Atelier Logiciel (2020 - present)
+- Build and maintain a large single-page application in Vue 3 with the composition API,
+  written entirely in TypeScript under strict compiler settings.
+- Author and document our internal component library (38 components), including
+  theming tokens, Storybook documentation, and visual regression coverage.
+- Led our performance programme: route-based lazy loading, bundle budget enforcement in
+  CI, image and font strategy. Largest Contentful Paint reduced from 3.8s to 1.5s and
+  Cumulative Layout Shift held under 0.05.
+- Own accessibility compliance for the product: took the application to WCAG 2.1 AA,
+  including focus management in dialogs, semantic landmarks, and screen-reader testing
+  with NVDA and VoiceOver.
+- Component and end-to-end test suites with Vitest, Vue Testing Library and Playwright.
+- Server-side rendering and routing with Nuxt 3.
+
+SKILLS
+Vue 3, Nuxt 3, TypeScript (strict), JavaScript, composition API, Pinia, component
+library authoring, design tokens, Storybook, CSS / Sass / Tailwind, responsive layout,
+Vitest, Vue Testing Library, Playwright, Vite, Core Web Vitals, WCAG 2.1 AA, NVDA
+
+EDUCATION
+Diplome d'ingenieur, INSA Lyon, 2019

@@ -1,0 +1,34 @@
+Dr. Anika Sharma
+Toronto, Canada | anika.sharma@example.com
+
+SUMMARY
+Computational linguist and NLP researcher. Four years of postdoctoral research on
+low-resource machine translation and syntactic parsing. Strong methodological and
+modelling background; no industry production experience.
+
+RESEARCH EXPERIENCE
+Postdoctoral Researcher, University of Toronto (2021 - present)
+- Research on low-resource neural machine translation; transformer architectures
+  implemented in PyTorch.
+- First author on six peer-reviewed papers (ACL, EMNLP, LREC). 240 citations.
+- Designed evaluation protocols for morphologically rich languages, including human
+  judgement studies and correlation analysis against automatic metrics.
+- Built and released two annotated treebank corpora; supervised eight annotators and
+  reported inter-annotator agreement.
+- Teach the graduate NLP seminar; supervise four MSc theses.
+
+PhD Computational Linguistics, University of Edinburgh (2017 - 2021)
+- Thesis on cross-lingual transfer for dependency parsing.
+
+SKILLS
+Python, PyTorch, Hugging Face Transformers, transformer architectures, NLTK, spaCy,
+statistical evaluation, experimental design, annotation methodology, LaTeX, SLURM
+cluster computing, R
+
+Note: my work has been research code and cluster batch jobs. I have not deployed a model
+to a production service, and I have not worked with cloud deployment, monitoring or
+containerisation.
+
+EDUCATION
+PhD Computational Linguistics, University of Edinburgh, 2021
+MSc Linguistics, Jawaharlal Nehru University, 2016

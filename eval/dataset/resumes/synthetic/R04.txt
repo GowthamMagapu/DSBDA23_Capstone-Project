@@ -1,0 +1,31 @@
+Wei Zhang
+Singapore | wei.zhang@example.com
+
+SUMMARY
+Machine learning engineer, 5 years shipping NLP systems to production. Own models end
+to end and care about the evaluation methodology as much as the modelling.
+
+EXPERIENCE
+Machine Learning Engineer, Lumen Health (2021 - present)
+- Built and deployed a clinical-note classification service: fine-tuned a RoBERTa
+  encoder, served via TorchServe behind a FastAPI gateway, 40M documents/year.
+- Established the offline evaluation harness: stratified holdout, per-class F1,
+  calibration curves, and a labelling protocol with inter-annotator agreement.
+- Ran online A/B evaluation against the rules-based incumbent; +18% macro F1 with a
+  documented shadow-deployment period before cutover.
+- Built the training data pipeline in Airflow (Postgres to S3 to feature store).
+- Added drift monitoring on input distribution and prediction entropy; alerts to
+  PagerDuty.
+- Fine-tuned an open-weights LLM with LoRA for structured extraction; evaluated against
+  a prompted baseline and shipped the cheaper prompted version after measuring parity.
+
+Data Scientist, Orbit Retail (2019 - 2021)
+- Demand forecasting and customer-review topic modelling.
+
+SKILLS
+Python, PyTorch, Hugging Face Transformers, scikit-learn, spaCy, TensorFlow (working),
+FastAPI, TorchServe, Airflow, MLflow, Docker, Kubernetes, pgvector, Weights & Biases,
+evaluation design, A/B testing, drift monitoring
+
+EDUCATION
+MSc Computer Science (Machine Learning), NUS, 2019

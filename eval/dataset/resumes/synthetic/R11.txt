@@ -1,0 +1,32 @@
+Kevin Park
+Seoul, South Korea | kevin.park@example.com
+
+SUMMARY
+Computer science graduate (2025) looking for a first engineering role. Project
+experience only; no professional employment yet.
+
+PROJECTS
+Study-group scheduling web app (final year project)
+- React frontend with TypeScript, Node.js/Express API, PostgreSQL database.
+- Implemented email/password login with hashed passwords and JWT sessions.
+- Deployed to a single Docker container on a cloud VM.
+- Wrote a handful of unit tests with Jest.
+
+Sentiment classifier (coursework)
+- Fine-tuned a small BERT model in PyTorch on a public review dataset; reported
+  accuracy and F1 on a holdout split.
+
+Open source
+- Three merged documentation pull requests to a mid-sized TypeScript library.
+
+INTERNSHIP
+Software Engineering Intern, Nexon Labs (summer 2024, 10 weeks)
+- Added form validation and small UI features to an internal React admin tool under
+  close supervision.
+
+SKILLS
+JavaScript, TypeScript, React, Node.js, Express, PostgreSQL, Python, PyTorch (coursework),
+Git, Docker (basic), Jest (basic), REST APIs
+
+EDUCATION
+BSc Computer Science, Yonsei University, 2025. GPA 3.7/4.0.
