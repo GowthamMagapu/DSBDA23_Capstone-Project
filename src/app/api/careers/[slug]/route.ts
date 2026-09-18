@@ -14,8 +14,15 @@ export async function GET(
       requirements: true,
       listing: true,
       tags: true,
+      createdAt: true,
+      owner: {
+        select: {
+          company: { select: { name: true, website: true, industry: true, location: true, size: true, about: true, culture: true } },
+        },
+      },
     },
   })
   if (!job) return NextResponse.json({ message: 'Job not found' }, { status: 404 })
-  return NextResponse.json(job)
+  const { owner, ...publicJob } = job
+  return NextResponse.json({ ...publicJob, company: owner.company })
 }

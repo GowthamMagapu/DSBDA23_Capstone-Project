@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { Loader2, ArrowRight, Check, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 
 const signUpSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -77,6 +78,19 @@ export const SignUpForm = () => {
         if (result.errors?._form) {
           setError('confirmPassword', { message: result.errors._form[0] })
         }
+        return
+      }
+
+      const signInResult = await signIn('credentials', {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      })
+
+      if (signInResult?.error) {
+        setError('confirmPassword', {
+          message: 'Account created, but sign-in failed. Please try signing in manually.',
+        })
         return
       }
 

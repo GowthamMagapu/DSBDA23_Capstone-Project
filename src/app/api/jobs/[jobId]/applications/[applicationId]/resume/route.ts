@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
+import { sanitizeFileName } from '@/lib/resume-file'
 
 export async function GET(
   _request: Request,
@@ -16,10 +17,12 @@ export async function GET(
   })
   if (!application?.resumeData) return NextResponse.json({ message: 'Resume not found' }, { status: 404 })
 
+  const fileName = sanitizeFileName(application.resumeFileName || 'resume')
+
   return new NextResponse(application.resumeData, {
     headers: {
       'Content-Type': application.resumeMimeType || 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${application.resumeFileName || 'resume'}"`,
+      'Content-Disposition': `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
     },
   })
 }

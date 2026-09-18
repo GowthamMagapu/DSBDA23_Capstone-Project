@@ -7,21 +7,24 @@ datasource db {
 }
 
 model User {
-  id                 String    @id @default(cuid())
+  id                 String              @id @default(cuid())
   name               String?
-  email              String    @unique
+  email              String              @unique
   emailVerified      DateTime?
   passwordHash       String?
-  provider           String    @default("credentials")
+  provider           String              @default("credentials")
   profileImage       String?
   resetToken         String?
   resetTokenExpires  DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   accounts           Account[]
   sessions           Session[]
   jobs               Job[]
   profiles           CandidateProfile[]
+  company            Company?
+  linkedInConnection LinkedInConnection?
+  agentEvents        AgentEvent[]
 }
 
 model Account {
@@ -60,43 +63,47 @@ model VerificationToken {
 }
 
 model Job {
-  id           String        @id @default(cuid())
-  title        String
-  description  String        @db.Text
-  requirements String        @db.Text
-  slug         String        @unique
-  listing      String?       @db.Text
-  tags         String?       @db.Text
-  status       String        @default("published")
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  ownerId      String
-  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  applications Application[]
+  id              String        @id @default(cuid())
+  title           String
+  description     String        @db.Text
+  requirements    String        @db.Text
+  slug            String        @unique
+  listing         String?       @db.Text
+  tags            String?       @db.Text
+  status          String        @default("published")
+  linkedinStatus  String?
+  linkedinPostUrl String?       @db.Text
+  linkedinMessage String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  ownerId         String
+  owner           User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  applications    Application[]
+  agentEvents     AgentEvent[]
 
   @@index([ownerId])
 }
 
 model Application {
-  id            String   @id @default(cuid())
-  candidateName String
-  email         String
-  resumeText    String   @db.Text
-  coverLetter   String?  @db.Text
+  id             String            @id @default(cuid())
+  candidateName  String
+  email          String
+  resumeText     String            @db.Text
+  coverLetter    String?           @db.Text
   resumeFileName String?
   resumeMimeType String?
-  resumeData    Bytes?   @db.LongBlob
-  score         Int      @default(0)
-  status        String   @default("review")
-  aiSummary     String?  @db.Text
-  matchedSkills String?  @db.Text
-  missingSkills String?  @db.Text
-  source        String   @default("public")
-  createdAt     DateTime @default(now())
-  jobId         String
-  job           Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  profileId     String?
-  profile       CandidateProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  resumeData     Bytes?            @db.LongBlob
+  score          Int               @default(0)
+  status         String            @default("review")
+  aiSummary      String?           @db.Text
+  matchedSkills  String?           @db.Text
+  missingSkills  String?           @db.Text
+  source         String            @default("public")
+  createdAt      DateTime          @default(now())
+  jobId          String
+  job            Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  profileId      String?
+  profile        CandidateProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
 
   @@index([jobId])
   @@index([score])
@@ -118,4 +125,50 @@ model CandidateProfile {
   applications   Application[]
 
   @@index([ownerId])
+}
+
+model Company {
+  id                  String   @id @default(cuid())
+  name                String
+  website             String?
+  industry            String?
+  location            String?
+  size                String?
+  about               String   @db.Text
+  culture             String?  @db.Text
+  notificationEmail   String?
+  notifyOnApplication Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  ownerId             String   @unique
+  owner               User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+model LinkedInConnection {
+  id                 String   @id @default(cuid())
+  accessToken        String   @db.Text
+  expiresAt          DateTime
+  memberUrn          String
+  memberName         String?
+  organizationUrn    String?
+  postAsOrganization Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AgentEvent {
+  id        String   @id @default(cuid())
+  type      String
+  level     String   @default("info")
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  jobId     String?
+  job       Job?     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, createdAt])
+  @@index([jobId])
 }

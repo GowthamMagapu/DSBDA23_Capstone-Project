@@ -1,9 +1,12 @@
 'use client'
 
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { signOut, useSession } from 'next-auth/react'
-import { Check, Copy, Download, ExternalLink, LogOut, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { Check, Copy, Download, ExternalLink, LogOut, Plus, RefreshCw, Share2, Sparkles, Trash2 } from 'lucide-react'
 import Link from 'next/link'
+import { CompanyProfilePanel, type Company } from '@/components/dashboard/CompanyProfilePanel'
+import { LinkedInPanel } from '@/components/dashboard/LinkedInPanel'
+import { AgentActivityFeed, type AgentEvent } from '@/components/dashboard/AgentActivityFeed'
 
 type Job = {
   id: string
@@ -13,6 +16,9 @@ type Job = {
   requirements: string
   status: string
   tags: string | null
+  linkedinStatus: string | null
+  linkedinPostUrl: string | null
+  linkedinMessage: string | null
   _count: { applications: number }
 }
 
@@ -47,28 +53,62 @@ export default function DashboardPage() {
     recommendations: string[]
     bottlenecks: string[]
   } | null>(null)
-  const [form, setForm] = useState({ title: '', description: '', requirements: '' })
+  const [form, setForm] = useState({ title: '', description: '', requirements: '', autoApplyExistingCandidates: false })
   const [message, setMessage] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null)
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null)
+  const [retryingJobId, setRetryingJobId] = useState<string | null>(null)
+  const [company, setCompany] = useState<Company | null>(null)
+  const [companyLoaded, setCompanyLoaded] = useState(false)
+  const [accountEmail, setAccountEmail] = useState<string | null>(null)
+  const selectedJobIdRef = useRef<string | null>(null)
+  selectedJobIdRef.current = selectedJob?.id ?? null
+
+  const refreshJobs = useCallback(async () => {
+    const response = await fetch('/api/jobs')
+    if (!response.ok) return
+    const latest: Job[] = await response.json()
+    setJobs(latest)
+    setSelectedJob((current) => (current ? latest.find((job) => job.id === current.id) ?? null : current))
+  }, [])
+
+  const refreshSelectedJob = useCallback(async (jobId: string) => {
+    const [applicationsResponse, analysisResponse] = await Promise.all([
+      fetch(`/api/jobs/${jobId}/applications`),
+      fetch(`/api/jobs/${jobId}/analysis`),
+    ])
+    if (selectedJobIdRef.current !== jobId) return
+    if (applicationsResponse.ok) setApplications(await applicationsResponse.json())
+    if (analysisResponse.ok) setAnalysis(await analysisResponse.json())
+  }, [])
 
   useEffect(() => {
     if (status !== 'authenticated') return
-    fetch('/api/jobs').then((response) => response.json()).then(setJobs)
-  }, [status])
+    refreshJobs()
+    fetch('/api/company')
+      .then((response) => response.json())
+      .then((data) => {
+        setCompany(data.company ?? null)
+        setAccountEmail(data.accountEmail ?? null)
+      })
+      .finally(() => setCompanyLoaded(true))
+  }, [status, refreshJobs])
 
+  const selectedJobId = selectedJob?.id
   useEffect(() => {
-    if (!selectedJob) return
+    if (!selectedJobId) return
+    setAnalysis(null)
+    refreshSelectedJob(selectedJobId)
+  }, [selectedJobId, refreshSelectedJob])
 
-    fetch(`/api/jobs/${selectedJob.id}/applications`)
-      .then((response) => response.json())
-      .then(setApplications)
-
-    fetch(`/api/jobs/${selectedJob.id}/analysis`)
-      .then((response) => response.json())
-      .then(setAnalysis)
-  }, [selectedJob])
+  // Keep the pipeline in sync as the agent works in the background (new applicants, pool scoring, LinkedIn).
+  const handleAgentEvents = useCallback((events: AgentEvent[]) => {
+    if (!events.some((event) => /^(job|application|pool|linkedin)\./.test(event.type))) return
+    refreshJobs()
+    const currentJobId = selectedJobIdRef.current
+    if (currentJobId && events.some((event) => event.jobId === currentJobId)) refreshSelectedJob(currentJobId)
+  }, [refreshJobs, refreshSelectedJob])
 
   if (status === 'loading') return <main className="flex min-h-screen items-center justify-center bg-black text-white">Loading AgentU...</main>
   if (status === 'unauthenticated') return null
@@ -88,25 +128,29 @@ export default function DashboardPage() {
     } else {
       const linkedinStatus = job.linkedinPost?.status
       const linkedinMessage = linkedinStatus === 'posted'
-        ? 'Job published and shared to LinkedIn.'
-        : linkedinStatus === 'skipped'
-          ? 'Job published. LinkedIn auto-post is not configured yet.'
-          : linkedinStatus === 'failed'
-            ? `Job published, but LinkedIn post failed: ${job.linkedinPost?.message || 'unknown error'}`
-            : 'Job published. AI generated an optimized public listing — share it to collect candidates.'
+        ? 'Shared on LinkedIn.'
+        : linkedinStatus === 'failed'
+          ? `LinkedIn post failed: ${job.linkedinPost?.message || 'unknown error'}`
+          : job.linkedinPost?.message || ''
 
       setJobs((current) => [{ ...job, _count: { applications: 0 } }, ...current])
       setSelectedJob({ ...job, _count: { applications: 0 } })
-      setForm({ title: '', description: '', requirements: '' })
-      setMessage(linkedinMessage)
+      setForm({ title: '', description: '', requirements: '', autoApplyExistingCandidates: false })
+      setMessage(`Job published at ${job.publicUrl}. ${linkedinMessage} Updates will be emailed to you.`)
     }
     setIsCreating(false)
   }
 
-  const loadApplications = async (job: Job) => {
+  const loadApplications = (job: Job) => {
+    if (job.id !== selectedJob?.id) setApplications([])
     setSelectedJob(job)
-    const response = await fetch(`/api/jobs/${job.id}/applications`)
-    setApplications(await response.json())
+  }
+
+  const retryLinkedIn = async (job: Job) => {
+    setRetryingJobId(job.id)
+    await fetch(`/api/jobs/${job.id}/linkedin`, { method: 'POST' })
+    await refreshJobs()
+    setRetryingJobId(null)
   }
 
   const publicUrl = (slug: string) => `${window.location.origin}/careers/${slug}`
@@ -173,6 +217,14 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        <section className="mb-12 grid gap-6 lg:grid-cols-[1fr_380px]">
+          <div className="space-y-6">
+            {companyLoaded && <CompanyProfilePanel company={company} accountEmail={accountEmail ?? session?.user?.email ?? null} onSaved={setCompany} />}
+            <AgentActivityFeed onNewEvents={handleAgentEvents} />
+          </div>
+          <LinkedInPanel onChange={refreshJobs} />
+        </section>
+
         <div className="grid gap-8 lg:grid-cols-[380px_1fr]">
         <section id="hr-agent">
           <div className="mb-8">
@@ -182,13 +234,23 @@ export default function DashboardPage() {
           </div>
 
           <form onSubmit={createJob} className="space-y-4 border-t border-white/10 pt-6">
+            {companyLoaded && !company && <p className="border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-xs leading-5 text-amber-200">Save your company profile above first. The agent writes every listing and LinkedIn post from it.</p>}
             <input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Job title" className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none placeholder:text-white/35 focus:border-white/50" />
             <textarea required minLength={20} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Role description" rows={4} className="w-full resize-none rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none placeholder:text-white/35 focus:border-white/50" />
             <textarea required value={form.requirements} onChange={(event) => setForm({ ...form, requirements: event.target.value })} placeholder="Requirements, skills, or keywords" rows={4} className="w-full resize-none rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none placeholder:text-white/35 focus:border-white/50" />
-            <button disabled={isCreating} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-medium text-black disabled:opacity-50">
+            <label className="flex items-start gap-3 text-xs leading-5 text-white/55">
+              <input
+                type="checkbox"
+                checked={form.autoApplyExistingCandidates}
+                onChange={(event) => setForm({ ...form, autoApplyExistingCandidates: event.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded border-white/30 bg-white/5"
+              />
+              Also score my existing candidate pool against this new role in the background (uses AI credits; results stream into the activity feed and your inbox).
+            </label>
+            <button disabled={isCreating || !company} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-medium text-black disabled:opacity-50">
               <Plus className="h-4 w-4" /> {isCreating ? 'Publishing...' : 'Publish job'}
             </button>
-            {message && <p className="text-sm text-white/65">{message}</p>}
+            {message && <p className="break-words text-sm text-white/65">{message}</p>}
           </form>
         </section>
 
@@ -204,7 +266,7 @@ export default function DashboardPage() {
                   <h3 className="text-xl font-medium">{job.title}</h3>
                   <p className="mt-2 text-sm text-white/50">{job._count.applications} application{job._count.applications === 1 ? '' : 's'}</p>
                 </button>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {job.slug && (
                     <>
                       <Link href={`/careers/${job.slug}`} target="_blank" className="inline-flex items-center gap-2 border border-white/15 px-3 py-2 text-xs text-white/70 hover:bg-white/10"><ExternalLink className="h-3.5 w-3.5" /> Public page</Link>
@@ -212,6 +274,12 @@ export default function DashboardPage() {
                     </>
                   )}
                   <a href={`/api/jobs/${job.id}/applications/export`} className="inline-flex items-center gap-2 border border-white/15 px-3 py-2 text-xs text-white/70 hover:bg-white/10"><Download className="h-3.5 w-3.5" /> Download CSV</a>
+                  {job.linkedinStatus === 'posted' && job.linkedinPostUrl && (
+                    <a href={job.linkedinPostUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-emerald-400/30 px-3 py-2 text-xs text-emerald-300 hover:bg-emerald-400/10"><Share2 className="h-3.5 w-3.5" /> LinkedIn post</a>
+                  )}
+                  {job.linkedinStatus !== 'posted' && (
+                    <button onClick={() => retryLinkedIn(job)} disabled={retryingJobId === job.id} title={job.linkedinMessage ?? undefined} className="inline-flex items-center gap-2 border border-white/15 px-3 py-2 text-xs text-white/70 hover:bg-white/10 disabled:opacity-50"><RefreshCw className={`h-3.5 w-3.5 ${retryingJobId === job.id ? 'animate-spin' : ''}`} /> {job.linkedinStatus === 'failed' ? 'Retry LinkedIn' : 'Post to LinkedIn'}</button>
+                  )}
                   <button onClick={() => deleteJob(job)} disabled={deletingJobId === job.id} className="inline-flex items-center gap-2 border border-white/15 px-3 py-2 text-xs text-white/70 hover:bg-white/10 disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /> {deletingJobId === job.id ? 'Deleting...' : 'Delete'}</button>
                 </div>
               </div>

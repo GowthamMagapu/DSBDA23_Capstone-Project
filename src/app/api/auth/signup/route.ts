@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 const signUpSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -20,6 +21,14 @@ const signUpSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request)
+    if (!checkRateLimit(`signup:${ip}`, 5, 15 * 60 * 1000)) {
+      return NextResponse.json(
+        { errors: { _form: ['Too many signup attempts. Please try again later.'] }, message: 'Too many requests' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const validatedFields = signUpSchema.safeParse(body)
 

@@ -46,11 +46,11 @@ export default function Home() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <button className="hidden text-sm text-white/80 transition-colors hover:text-white sm:inline-flex">
-            Talk to sales
-          </button>
-          <Link href="/auth/signin" className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-transform hover:scale-[1.01]">
-            Get started
+          <Link href="/auth/signin" className="hidden text-sm text-white/80 transition-colors hover:text-white sm:inline-flex">
+            Sign in
+          </Link>
+          <Link href="/auth/signup" className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-transform hover:scale-[1.01]">
+            Create account
           </Link>
         </div>
       </header>
@@ -91,12 +91,12 @@ export default function Home() {
             </div>
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <button className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white px-6 py-3.5 text-base font-medium text-black transition-opacity hover:opacity-95">
-                Launch Your AI Team
-              </button>
-              <button className="inline-flex items-center justify-center rounded-full border border-white/15 bg-transparent px-6 py-3.5 text-base font-medium text-white transition-colors hover:bg-white/5">
-                Contact sales
-              </button>
+              <Link href="/auth/signup" className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white px-6 py-3.5 text-base font-medium text-black transition-opacity hover:opacity-95">
+                Start free
+              </Link>
+              <Link href="/auth/signin" className="inline-flex items-center justify-center rounded-full border border-white/15 bg-transparent px-6 py-3.5 text-base font-medium text-white transition-colors hover:bg-white/5">
+                Sign in
+              </Link>
             </div>
           </div>
 

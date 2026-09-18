@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
+import { buildMariaDbConfig } from '@/lib/db-config'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -48,14 +49,7 @@ function createPrismaClient() {
   }
 
   const databaseUrl = new URL(process.env.DATABASE_URL)
-  const adapter = new PrismaMariaDb({
-    host: databaseUrl.hostname,
-    port: Number(databaseUrl.port) || 3306,
-    user: decodeURIComponent(databaseUrl.username),
-    password: decodeURIComponent(databaseUrl.password),
-    database: databaseUrl.pathname.slice(1),
-    connectionLimit: 5,
-  })
+  const adapter = new PrismaMariaDb(buildMariaDbConfig(databaseUrl))
 
   return new PrismaClient({
     adapter,
@@ -77,14 +71,7 @@ export function getPrisma() {
     } as unknown as PrismaClient
   }
   const databaseUrl = new URL(process.env.DATABASE_URL)
-  const adapter = new PrismaMariaDb({
-    host: databaseUrl.hostname,
-    port: Number(databaseUrl.port) || 3306,
-    user: decodeURIComponent(databaseUrl.username),
-    password: decodeURIComponent(databaseUrl.password),
-    database: databaseUrl.pathname.slice(1),
-    connectionLimit: 5,
-  })
+  const adapter = new PrismaMariaDb(buildMariaDbConfig(databaseUrl))
 
   return new PrismaClient({
     adapter,

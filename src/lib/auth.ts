@@ -1,8 +1,21 @@
 import { type NextAuthConfig } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
+import Google from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
+import { buildMariaDbConfig } from '@/lib/db-config'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+
+const authSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
+if (!authSecret) {
+  throw new Error(
+    'Missing AUTH_SECRET (or NEXTAUTH_SECRET) environment variable. Set it before starting the app — refusing to fall back to an insecure default.'
+  )
+}
+
+const googleClientId = process.env.GOOGLE_CLIENT_ID
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -20,14 +33,7 @@ async function getPrisma() {
   }
   const { PrismaClient } = await import('@prisma/client')
   const databaseUrl = new URL(process.env.DATABASE_URL)
-  const adapter = new PrismaMariaDb({
-    host: databaseUrl.hostname,
-    port: Number(databaseUrl.port) || 3306,
-    user: decodeURIComponent(databaseUrl.username),
-    password: decodeURIComponent(databaseUrl.password),
-    database: databaseUrl.pathname.slice(1),
-    connectionLimit: 5,
-  })
+  const adapter = new PrismaMariaDb(buildMariaDbConfig(databaseUrl))
   const prisma = new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
@@ -37,7 +43,7 @@ async function getPrisma() {
 
 export const authConfig: NextAuthConfig = {
   trustHost: true,
-  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? 'dev-secret-change-me-please',
+  secret: authSecret,
   debug: process.env.NODE_ENV === 'development',
   session: {
     strategy: 'jwt',
@@ -95,17 +101,25 @@ export const authConfig: NextAuthConfig = {
     },
   },
   providers: [
+    ...(googleClientId && googleClientSecret
+      ? [Google({ clientId: googleClientId, clientSecret: googleClientSecret })]
+      : []),
     Credentials({
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const validatedFields = signInSchema.safeParse(credentials)
 
         if (!validatedFields.success) {
           return null
+        }
+
+        const ip = getClientIp(request)
+        if (!checkRateLimit(`signin:${ip}`, 10, 5 * 60 * 1000)) {
+          throw new Error('Too many sign-in attempts. Please try again in a few minutes.')
         }
 
         const { email, password } = validatedFields.data

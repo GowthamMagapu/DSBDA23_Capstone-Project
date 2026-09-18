@@ -53,7 +53,11 @@ export async function analyzeApplication(
   }
 }
 
-function keywordFallback(resumeText: string, requirements: string) {
+/**
+ * Deterministic keyword-overlap scorer used when the AI call fails.
+ * Exported so the evaluation harness can measure it as a baseline condition.
+ */
+export function keywordFallback(resumeText: string, requirements: string) {
   const terms = requirements
     .toLowerCase()
     .split(/[^a-z0-9+#.-]+/)
