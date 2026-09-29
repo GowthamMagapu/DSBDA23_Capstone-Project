@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
+import { analyseScreening } from '@/lib/screening-analysis'
 
 function parseSkillList(value: string | null): string[] {
   if (!value) return []
@@ -42,9 +43,28 @@ export async function GET(
   }
 
   const { jobId } = await params
+  // Selected rather than included: `applications: true` pulls every resume blob
+  // (LongBlob) into memory for a report that never uses them.
   const job = await prisma.job.findFirst({
     where: { id: jobId, ownerId: session.user.id },
-    include: { applications: true },
+    select: {
+      title: true,
+      requirements: true,
+      applications: {
+        select: {
+          id: true,
+          candidateName: true,
+          score: true,
+          status: true,
+          aiSummary: true,
+          matchedSkills: true,
+          missingSkills: true,
+          resumeText: true,
+          coverLetter: true,
+          resumeFileName: true,
+        },
+      },
+    },
   })
 
   if (!job) {
@@ -147,5 +167,8 @@ export async function GET(
     narrative,
     recommendations: recommendationList,
     bottlenecks: bottleneckList.length > 0 ? bottleneckList : ['No major bottlenecks detected yet. Continue monitoring the pipeline as more applications arrive.'],
+    // Distribution statistics and screening-integrity checks. The summary above describes
+    // the candidates; this describes how far the screening of them can be trusted.
+    screening: analyseScreening(applications, job.requirements),
   })
 }

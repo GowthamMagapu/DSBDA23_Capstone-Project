@@ -18,7 +18,9 @@ export async function extractResumeText(file: File, data: Buffer) {
     }
   }
 
-  if (file.type.includes('word') || extension === 'docx') {
+  // Only .docx is a zip mammoth can read; legacy binary .doc would make it throw, so it
+  // falls through and is scored on the cover letter alone.
+  if (extension === 'docx') {
     const result = await mammoth.extractRawText({ buffer: data })
     return result.value
   }

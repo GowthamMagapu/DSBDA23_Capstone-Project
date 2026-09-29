@@ -1,7 +1,9 @@
 # AgentU: An Event-Sourced Agent Architecture for LLM-Assisted Recruitment, with an Empirical Study of Its Failure Modes
 
-**Authors:** [names, university IDs]
-**Guide:** [name]
+**Authors:** M G K Gowtham - 2320030018
+             V Balaji Naidu - 2320030016
+             D Hemanth Raj - 2320030004
+**Guide:** N Sirisha
 **Department of CSE — Engineering Capstone Project**
 
 > **Draft status.** All quantitative results are real, produced by the harness in `eval/` on

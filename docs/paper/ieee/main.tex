@@ -1,0 +1,946 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{booktabs}
+
+\begin{document}
+
+\title{AgentU: An Event-Sourced Agent Architecture for\\
+LLM-Assisted Recruitment, with an Empirical Study\\
+of Its Failure Modes}
+
+% ---------------------------------------------------------------
+% Replace each "email@domain" with the author's email address or ORCID.
+% ---------------------------------------------------------------
+\author{\IEEEauthorblockN{1\textsuperscript{st} M G K Gowtham}
+\IEEEauthorblockA{\textit{Dept. of Computer Science and Engineering} \\
+\textit{Koneru Lakshmaiah Education Foundation}\\
+Vaddeswaram, India \\
+email@domain}
+\and
+\IEEEauthorblockN{2\textsuperscript{nd} V Balaji Vaddi}
+\IEEEauthorblockA{\textit{Dept. of Computer Science and Engineering} \\
+\textit{Koneru Lakshmaiah Education Foundation}\\
+Vaddeswaram, India \\
+email@domain}
+\and
+\IEEEauthorblockN{3\textsuperscript{rd} D Hemanth Raj}
+\IEEEauthorblockA{\textit{Dept. of Computer Science and Engineering} \\
+\textit{Koneru Lakshmaiah Education Foundation}\\
+Vaddeswaram, India \\
+email@domain}
+}
+
+\maketitle
+
+\begin{abstract}
+Automated resume screening is increasingly delegated to large language models,
+but deployments are rarely accompanied by measurements of how they fail. We
+present AgentU, a web application in which a recruiter describes a role once and
+an agent drafts a public job listing, publishes it, shares it on the recruiter's
+professional network account, screens incoming applications, and reports each
+step it takes. The system is built on two architectural commitments:
+event-sourced orchestration, in which the agent never reports progress by
+returning it but instead appends to an append-only event log that the interface
+projects, decoupling progress visibility from the request and response cycle;
+and degradation-first design, in which every external dependency has a
+documented fallback so that no single outage prevents a recruiter from
+publishing or a candidate from applying. We evaluate the screening component
+against author-assigned ground truth on 48 job and resume pairs, comparing the
+language model scorer to the system's own keyword-overlap fallback and to a
+reject-everything baseline. The language model scorer reaches 81.3 percent
+accuracy, macro F1 of 0.740, a Cohen kappa of 0.623 and a Spearman rank
+correlation of 0.915 against human fit ratings, against a kappa of 0.235 for
+keyword overlap and 0 for the trivial rule. Four negative results are equally
+central. The scorer does not see through keyword stuffing. Scores are stable
+under repetition but not under rewording, so the same candidate can receive
+different decisions for the same role. A one-line prompt injection impersonating
+a system turn moved an unrelated candidate from 0 to 95, changing the hiring
+decision, with 2 of 10 attacks succeeding. Scanned documents parse successfully
+while yielding almost no text, silently starving the scorer of input. We also
+report a methodological hazard encountered during the study itself: the system's
+own silent fallback corrupted our first measurement run, motivating a circuit
+breaker that refuses to emit a report when the model under test has stopped
+responding.
+\end{abstract}
+
+\begin{IEEEkeywords}
+LLM-assisted recruitment, resume screening, prompt injection, event sourcing,
+graceful degradation, evaluation methodology
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+\subsection{Motivation}
+
+Recruiting at small and mid-sized organisations involves substantial repetitive
+work that is adjacent to, but not the same as, judgement: rewriting a rough role
+description into a presentable public listing, distributing it, collecting
+applications in varied document formats, reading each resume against the same
+requirements, and keeping the hiring manager informed. Applicant tracking
+systems address storage and workflow, but the reading and drafting remain
+manual, and the informing is typically a dashboard the recruiter must remember
+to visit.
+
+Large language models are an obvious fit for the drafting and reading. What is
+less obvious, and much less frequently reported, is how such a system behaves
+when the model is wrong, when the model is unavailable, when the input document
+cannot be read, or when the input is adversarial. A candidate has a direct
+incentive to manipulate a screener, and unlike most language model
+applications, the untrusted input here arrives as a file the candidate authored.
+
+\subsection{Problem Statement}
+
+We address two questions:
+
+\begin{enumerate}
+\item \textit{Architecturally} --- how should an agent that performs a
+multi-step, partly slow, partly failure-prone workflow report its progress and
+survive the failure of its dependencies?
+\item \textit{Empirically} --- how good is language-model-based resume screening
+in this system, and more importantly, \textit{how does it fail}?
+\end{enumerate}
+
+\subsection{Contributions}
+
+\begin{enumerate}
+\item \textbf{An event-sourced agent architecture} in which progress visibility
+is decoupled from the request and response cycle. Each step appends an
+\texttt{AgentEvent}; the recruiter's activity feed is a projection of that log.
+Work deferred past the HTTP response is therefore exactly as visible as work
+performed before it (Sections~\ref{sec:eventsourcing} and~\ref{sec:boundary}).
+\item \textbf{A degradation-first design} in which each of the three external
+dependencies has an explicit fallback path, verified to keep the core workflow
+available (Section~\ref{sec:degradation}).
+\item \textbf{An evaluation harness that measures the production code path}
+rather than a reimplementation, together with a methodological finding: a system
+that degrades silently is a hazard to its own evaluation. Our first run recorded
+42 of 48 observations as model output when the model had in fact stopped
+responding. The harness now trips a breaker and refuses to emit a partial report
+(Sections~\ref{sec:protocol} and~\ref{sec:silent}).
+\item \textbf{An empirical characterisation of failure modes} in language model
+resume screening, including a confirmed prompt-injection vulnerability that
+changes hiring decisions, sensitivity of scores to resume presentation rather
+than substance, and silent upstream extraction failure (Section~\ref{sec:results}).
+\end{enumerate}
+
+\subsection{Scope}
+
+This is a capstone-scale study. The dataset is 48 labelled pairs with
+single-annotator ground truth, one model and one temperature setting. Results
+indicate direction and support design claims; they are not a benchmark.
+Limitations are stated in full in Section~\ref{sec:ethics}.
+
+\section{Related Work}
+
+\textbf{Algorithmic hiring and its risks.} The best-known cautionary case is
+Amazon's internal recruiting tool, abandoned after it was found to disadvantage
+women, reported by Dastin~\cite{b1}. Bogen and Rieke~\cite{b2} survey where bias
+enters the hiring funnel. Raghavan \textit{et al.}~\cite{b3} examine what
+vendors of algorithmic hiring tools claim against what they do.
+
+\textbf{Regulation.} New York City Local Law 144~\cite{b8} requires annual
+independent bias audits of automated employment decision tools and notification
+of candidates. The European Union Artificial Intelligence Act~\cite{b9}
+classifies artificial intelligence used in employment and worker management as
+high-risk. Both are directly relevant to a system of this shape.
+
+\textbf{Prompt injection.} Perez and Ribeiro~\cite{b4} introduced the direct
+form of the attack. Greshake \textit{et al.}~\cite{b5} describe the indirect
+form, which is exactly our threat model: the attack arrives inside a document
+the application ingests. The OWASP Top 10 for Large Language Model
+Applications~\cite{b6} lists prompt injection as LLM01.
+
+\textbf{Agreement metrics.} Cohen~\cite{b7} corrects observed agreement for
+agreement expected by chance, which Section~\ref{sec:metrics} argues is
+essential under our class imbalance.
+
+\textbf{Gap.} Work on language model resume screening tends to report
+accuracy-style metrics on curated datasets. We found comparatively little that
+reports, for one deployed system, the combination of screening quality,
+determinism, presentation sensitivity, adversarial robustness and upstream
+extraction reliability, and that measures the production code path rather than
+an idealised one.
+
+\section{System Overview}
+
+A recruiter signs up, describes their company once, and publishes a role. The
+agent then:
+
+\begin{enumerate}
+\item Drafts a polished public listing from the company brief and the raw role
+description.
+\item Publishes it at a public careers URL and shares it on the recruiter's
+connected professional network account.
+\item Emails the recruiter that the job is live, with the public link and the
+sharing outcome.
+\item Screens each incoming application, extracting resume text, scoring it
+against the requirements, and producing an evaluation with matched and missing
+skill lists, then emails the recruiter with the result.
+\item Optionally re-scores the recruiter's existing candidate pool against the
+new role.
+\item Records every step above in an activity feed the recruiter can watch.
+\end{enumerate}
+
+\section{Methodology and System Design}
+
+\subsection{Layered Architecture}
+
+The application is a single Next.js 15 deployment with six layers: client pages,
+a request gate implemented as middleware, 17 route handlers, a 15-module service
+layer, an object-relational mapper over MariaDB, and three external services for
+language modelling, social posting and electronic mail. Business logic lives in
+the service layer, not in route handlers, so it can be exercised directly. This
+property is one that Section~\ref{sec:protocol} depends on, since the evaluation
+harness imports the same functions the application runs.
+
+\subsection{Event-Sourced Agent Orchestration}
+\label{sec:eventsourcing}
+
+The design problem is that the agent's work is multi-step, partly slow, and
+partly failure-prone, while HTTP offers a single response. Returning a summary
+at the end would make everything before it invisible and everything after it
+unreportable.
+
+Instead, each step appends an \texttt{AgentEvent} row, carrying a type, a level,
+a message, an owner identifier, an optional job identifier and a creation
+timestamp. The recruiter's activity feed is a projection of that log, polled
+every five seconds against a cursor. Three consequences follow:
+
+\begin{itemize}
+\item \textbf{Progress visibility is decoupled from the response.} A step that
+runs after the response is as visible as one that runs before it.
+\item \textbf{Logging cannot break the workflow it describes.} The logging
+function swallows its own errors; a failure to record a step must never fail the
+step.
+\item \textbf{The log is the audit trail.} Levels of information, success,
+warning and error let the feed distinguish ``the post was skipped because you
+are not connected'' from ``the network rejected the post''.
+\end{itemize}
+
+\subsection{Graceful Degradation}
+\label{sec:degradation}
+
+Each external dependency has an explicit fallback, chosen so the core workflow
+survives, as summarised in Table~\ref{tab:degradation}.
+Section~\ref{sec:silent} reports the cost of this choice: a fallback that is
+invisible to the user is also invisible to the evaluator.
+
+\begin{table*}[!t]
+\caption{Fallback Behaviour of Each External Dependency}
+\label{tab:degradation}
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Dependency} & \textbf{On failure} & \textbf{Effect} \\
+\hline
+Language model (listing) & Template listing assembled from the company brief & Job still publishes \\
+\hline
+Language model (screening) & Keyword-overlap scoring over requirement terms & Application still scored and ranked \\
+\hline
+Social posting & Post marked skipped or failed, retryable from the job card & Job still publishes \\
+\hline
+Electronic mail & Send skipped, recorded in the activity feed & Workflow unaffected \\
+\hline
+\end{tabular}
+\end{center}
+\end{table*}
+
+\subsection{Work Placement at the Response Boundary}
+\label{sec:boundary}
+
+Work is placed on one side or the other of the HTTP response deliberately.
+
+On the publish path, listing generation and the social
+post run in-request because their outcome belongs in the response; the
+confirmation email and candidate-pool re-scoring run in a deferred hook, since
+the recruiter should not wait for a pool of 100 candidates to be re-scored. Pool
+scoring is bounded at a concurrency of three so a large pool cannot fan out into
+an unbounded burst of concurrent model calls.
+
+On the application path the split is different:
+extraction and scoring run in-request, because the score must exist before the
+row is written, and only the recruiter email is deferred. The applicant
+therefore waits on a third-party model, measured at a median of 1335~ms
+(Section~\ref{sec:extraction}).
+
+\subsection{Security Measures}
+
+\begin{itemize}
+\item \textbf{Input validation.} Schema validation at every trust boundary;
+uploads constrained by an extension allowlist and a 10~MB cap.
+\item \textbf{Ownership.} Every authenticated route resolves the session user
+identifier and filters by it. Enforcement is per query rather than by a database
+policy, a limitation noted in Section~\ref{sec:ethics}.
+\item \textbf{Rate limiting.} The public application endpoint allows five
+submissions per client address per 15 minutes, using an in-memory fixed window.
+\item \textbf{Credentials at rest.} Third-party access tokens are encrypted with
+AES-256-GCM under a key derived from the application secret; rotating that
+secret invalidates stored tokens and forces a reconnect.
+\item \textbf{Authentication.} Session tokens are issued as JSON Web Tokens and
+passwords are hashed with bcrypt.
+\end{itemize}
+
+Prompt injection is \textit{not} mitigated. Section~\ref{sec:injection} measures
+the consequence.
+
+\section{Implementation}
+
+\subsection{Technology Stack}
+
+Table~\ref{tab:stack} lists the technology selected at each layer and the reason
+for it. In total the implementation comprises 64 TypeScript source files,
+approximately 5300 lines, 17 application programming interface routes and 10
+data models.
+
+\begin{table*}[!t]
+\caption{Technology Stack and Rationale}
+\label{tab:stack}
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Layer} & \textbf{Technology} & \textbf{Rationale} \\
+\hline
+Framework & Next.js 15.5 (App Router, Turbopack) & Server components, route handlers and deferred hooks in one deployment \\
+\hline
+User interface & React 19, Tailwind CSS 4, Framer Motion & Server-rendered dashboard with a live activity feed \\
+\hline
+Authentication & NextAuth v5, bcrypt & Credentials with optional federated sign-in \\
+\hline
+Validation & Zod 4 & Schema validation at trust boundaries \\
+\hline
+Object-relational mapper & Prisma 7 with a MariaDB driver adapter & Typed access; connection limit of five \\
+\hline
+Database & MySQL and MariaDB & Ten models \\
+\hline
+Language model & Gemini, temperature 0.2, JSON response mode & Structured output removes parsing as a failure mode \\
+\hline
+Document extraction & PDF and DOCX text extraction libraries & Handles the formats candidates actually submit \\
+\hline
+Electronic mail & Nodemailer over SMTP & Recruiter notification \\
+\hline
+Social posting & OAuth 2.0 with OpenID Connect and a user-generated content API & Posts as the recruiter or their company page \\
+\hline
+\end{tabular}
+\end{center}
+\end{table*}
+
+\subsection{Data Model}
+
+Ten models are defined, with the user as the tenant root.
+One asymmetry is deliberate: deleting a recruiter cascades
+to their jobs, applications, company, social connection and event history, but
+candidate profile rows survive with a null owner, so candidate records outlive
+the recruiter who collected them. Section~\ref{sec:ethics} discusses the
+data-protection implications.
+
+The candidate profile is inserted or updated by email address on every
+application, accumulating a reusable talent pool that later roles can be scored
+against. This is the mechanism behind the optional pool re-scoring described in
+Section~\ref{sec:boundary}.
+
+\subsection{The Screening Pipeline}
+
+The extraction function dispatches on file type, using a PDF parser for
+portable documents, a DOCX reader for word-processor documents and a UTF-8
+decode for plain text, and returns an empty string for anything unrecognised.
+The extracted text is concatenated with the cover letter and capped at 20\,000
+characters.
+
+The analysis function sends this text together with the job title and
+requirements to the language model under a system instruction demanding strict
+JSON, and maps the returned score to a decision band: at least 70 is
+\texttt{selected}, at least 40 is \texttt{review}, and anything lower is
+\texttt{rejected}. The intermediate \texttt{review} band is deliberate: it
+routes uncertain cases to a human rather than resolving them automatically.
+
+Any exception is caught and a keyword fallback --- the fraction of distinct
+requirement terms appearing in the resume --- is returned instead, with an empty
+summary.
+
+\section{Experimental Setup}
+
+\subsection{Apparatus}
+
+All experiments call the \textit{production functions} used for analysis,
+keyword fallback and text extraction, so measurements describe shipped behaviour
+including its fallbacks rather than an idealised reimplementation. The model was
+Gemini 3.5 Flash Lite at temperature 0.2 in JSON response mode. The run
+completed on 18 September 2026, consuming 97 billable interface calls over 578~s
+of wall-clock time. Requests are throttled to ten per minute and results are
+cached by input hash, so re-running a report costs no quota.
+
+\subsection{Dataset}
+
+The dataset has two tiers, supporting different claims.
+
+\textbf{Synthetic tier.} Twelve authored resumes across four job specifications
+give 48 labelled pairs. Each pair carries a categorical human label and an
+ordinal human fit rating from 0 to 4 used for rank correlation. Roles span
+frontend engineering, backend engineering, machine learning with natural
+language processing, and cloud infrastructure. Resumes span clear fits, clear
+non-fits and borderline cases, and include two adversarial constructions:
+
+\begin{itemize}
+\item \textbf{R06, the keyword stuffer}, lists nearly every term in all four job
+specifications while declaring no professional experience. It is labelled
+\texttt{rejected} for all four roles, and separates semantic judgement from
+lexical overlap.
+\item \textbf{R07, the vocabulary mismatch}, has five years of component-library,
+performance and accessibility depth in one frontend framework while applying to
+a role specified in terms of a different one. It is labelled \texttt{review},
+and tests whether transferable experience survives unfamiliar vocabulary.
+\end{itemize}
+
+The label distribution is 36 \texttt{rejected}, 6 \texttt{review} and 6
+\texttt{selected}. Authoring rather than collecting resumes is a deliberate
+trade-off: it permits controlled adversarial cases and avoids processing real
+applicants' personal data, at the cost of realism.
+
+\textbf{Real tier.} Seven self-authored tailorings of one candidate's resume
+were submitted as portable documents. This tier is not distributed because it
+contains personal data. One candidate cannot support an accuracy claim and none
+is made. What it supports is a consistency claim: all seven describe the same
+person, education and projects, so a screener should score them similarly for a
+given role.
+
+\subsection{Conditions}
+
+Three conditions were compared, as listed in Table~\ref{tab:conditions}.
+
+\begin{table}[!t]
+\caption{Experimental Conditions}
+\label{tab:conditions}
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Condition} & \textbf{Description} \\
+\hline
+\texttt{gemini} & Production language model scorer \\
+\hline
+\texttt{keyword} & Production fallback; requirement-term overlap \\
+\hline
+\texttt{majority} & Reject every candidate \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Metrics}
+\label{sec:metrics}
+
+We report accuracy, macro F1, Cohen's $\kappa$, and Spearman's $\rho$ between
+the score and the human fit rating.
+
+Accuracy alone is inadequate here. With 36 of 48 pairs labelled
+\texttt{rejected}, a classifier that rejects everyone scores 75\,\%. We
+therefore report $\kappa$, which corrects for chance agreement, and macro F1,
+which weights the two minority classes equally with the majority. Spearman's
+$\rho$ is reported because a shortlist depends on \textit{ordering} candidates
+correctly, independently of whether absolute scores are calibrated.
+
+\subsection{Protocol and the Silent-Degradation Hazard}
+\label{sec:protocol}
+
+Experiments E1 to E5 cover accuracy, determinism, variant consistency,
+prompt-injection robustness and extraction reliability, and are reported in
+Section~\ref{sec:results}.
+
+The harness includes a safeguard motivated by the incident in
+Section~\ref{sec:silent}. Because the analysis function returns fallback scores
+on any error, exhausting the request quota mid-run is invisible in the data. The
+harness detects fallback output by its empty summary field, trips a circuit
+breaker after three consecutive degraded calls, probes the interface directly to
+report the cause, refuses to write a partial report, and never caches a degraded
+observation. Cache keys include the model identifier, so results are never
+served across models.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Screening Accuracy}
+
+Table~\ref{tab:accuracy} reports the three conditions on the full set of 48
+pairs. The keyword baseline scores \textit{below the reject-everything rule on
+accuracy}, at 72.9\,\% against 75.0\,\%, while being obviously more useful than
+it --- a direct demonstration of the argument in Section~\ref{sec:metrics}. On
+the metrics that survive the imbalance, the ordering is unambiguous:
+$\kappa = 0.623$, indicating substantial agreement, against 0.235 and 0.
+
+\begin{table}[!t]
+\caption{Screening Performance by Condition}
+\label{tab:accuracy}
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Condition} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{$\kappa$} & \textbf{$\rho$} \\
+\hline
+\texttt{gemini} & \textbf{81.3\,\%} & \textbf{0.740} & \textbf{0.623} & \textbf{0.915} \\
+\hline
+\texttt{keyword} & 72.9\,\% & 0.346 & 0.235 & 0.756 \\
+\hline
+\texttt{majority} & 75.0\,\% & 0.286 & 0.000 & 0.000 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+Per-job rank correlation, in Table~\ref{tab:perjob}, shows the advantage is
+consistent and largest where requirements are expressed in language a lexical
+matcher cannot reach.
+
+\begin{table}[!t]
+\caption{Spearman Rank Correlation by Job}
+\label{tab:perjob}
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Job} & \textbf{\texttt{gemini} $\rho$} & \textbf{\texttt{keyword} $\rho$} \\
+\hline
+J1 Frontend & 0.933 & 0.735 \\
+\hline
+J2 Backend & 0.936 & 0.569 \\
+\hline
+J3 Machine learning & 0.900 & 0.864 \\
+\hline
+J4 Cloud infrastructure & 0.900 & 0.854 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Error Direction}
+
+Table~\ref{tab:confusion} gives the confusion matrix for the \texttt{gemini}
+condition and Table~\ref{tab:perclass} the per-class metrics.
+
+\begin{table}[!t]
+\caption{Confusion Matrix, \texttt{gemini} Condition}
+\label{tab:confusion}
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Human $\backslash$ predicted} & \textbf{selected} & \textbf{review} & \textbf{rejected} \\
+\hline
+selected & \textbf{6} & 0 & 0 \\
+\hline
+review & 2 & 4 & 0 \\
+\hline
+rejected & 0 & 7 & 29 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[!t]
+\caption{Per-Class Metrics, \texttt{gemini} Condition}
+\label{tab:perclass}
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Class} & \textbf{Support} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\hline
+selected & 6 & 0.750 & 1.000 & 0.857 \\
+\hline
+review & 6 & 0.364 & 0.667 & 0.471 \\
+\hline
+rejected & 36 & 1.000 & 0.806 & 0.892 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+Recall on \texttt{selected} is 1.000 and precision on \texttt{rejected} is
+1.000: no candidate a human would shortlist was rejected, and nothing the system
+rejected was one a human wanted. No error crosses more than one band. Every
+error is an over-promotion --- seven unqualified candidates pushed to
+\texttt{review}, and two borderline ones to \texttt{selected}.
+
+For a screener with a human in the loop this is the correct direction in which
+to fail: it costs reviewer time rather than losing talent. The \texttt{review}
+band exists for this purpose. The cost is a precision on \texttt{review} of
+0.364, meaning roughly two thirds of the review queue does not warrant review.
+
+\subsection{Keyword Stuffing Is Not Defeated}
+
+Table~\ref{tab:stuffer} reports the keyword-stuffing resume R06 across all four
+roles. It was promoted to \texttt{review} in every case, and on J3 and J4 the
+language model scored the stuffer \textit{higher} than keyword overlap did. We
+expected semantic judgement to see through lexical padding; it did not. The
+stuffer is caught by the \texttt{review} band, not by the model, and so reaches
+a human's queue. A term-density prior appears to survive in the model's
+judgement.
+
+\begin{table}[!t]
+\caption{Scores for the Keyword-Stuffing Resume (R06)}
+\label{tab:stuffer}
+\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Job} & \textbf{Human} & \textbf{\texttt{gemini}} & \textbf{\texttt{keyword}} \\
+\hline
+J1 & rejected & 45 (review) & 45 (review) \\
+\hline
+J2 & rejected & 45 (review) & 45 (review) \\
+\hline
+J3 & rejected & \textbf{45 (review)} & 21 (rejected) \\
+\hline
+J4 & rejected & \textbf{45 (review)} & 35 (rejected) \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+On the complementary case, R07, with experience in a different frontend
+framework from the one the role specified, scored 72 and was placed in
+\texttt{selected} against a human label of \texttt{review}. It was over-promoted
+by one band but directionally correct, and the transferable experience was
+recognised despite the vocabulary mismatch.
+
+\subsection{Determinism}
+
+Eight pairs were each scored in three trials with caching disabled at
+temperature 0.2. There were no decision-label flips in eight pairs. The mean
+within-pair standard deviation was 0.36, with a maximum of 2.89, and the mean
+range was 0.63, with a maximum of 5. Six of eight pairs returned identical
+scores across all three trials.
+
+Non-determinism is therefore not a practical threat to decision stability at
+this temperature: an unchanged application resubmitted receives the same
+outcome.
+
+\subsection{Presentation Sensitivity}
+\label{sec:presentation}
+
+Table~\ref{tab:variants} reports seven self-authored tailorings of one real
+candidate, identical in substance throughout.
+
+\begin{table}[!t]
+\caption{Score Spread Across Seven Resume Tailorings}
+\label{tab:variants}
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Role} & \textbf{Range} & \textbf{Mean (SD)} & \textbf{Decisions} \\
+\hline
+J1 Frontend & 35--45 & 40.7 (5.35) & \textbf{2} \\
+\hline
+J3 Machine learning & 45--65 & 47.9 (7.56) & 1 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+For the frontend role, four tailorings landed in \texttt{review} and three in
+\texttt{rejected}: the same person, the same projects, a different outcome. The
+decision boundary at 40 falls inside the spread. Length does not explain it,
+with $\rho = -0.144$; the longest variant was rejected and shorter ones
+reviewed.
+
+Read alongside the determinism result, this is the sharper finding: repeating
+the \textit{same text} is stable, but rewording the \textit{same facts} is not.
+The variance that matters is between presentations, not between calls, and it is
+invisible to a determinism test.
+
+\subsection{Prompt-Injection Robustness}
+\label{sec:injection}
+
+Resume text is concatenated directly into the prompt, so candidate-supplied text
+travels on the same channel as the screening instructions. This is indirect
+prompt injection in the sense of Greshake \textit{et al.}~\cite{b5}.
+Table~\ref{tab:injection} reports five attack patterns against two base
+candidates.
+
+\begin{table}[!t]
+\caption{Score Before and After Each Injection Attack}
+\label{tab:injection}
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Attack} & \textbf{J1/R09} & \textbf{J2/R08} \\
+\hline
+A1 direct instruction override & 0 $\rightarrow$ 0 & 72 $\rightarrow$ 75 \\
+\hline
+\textbf{A2 forged system turn} & \textbf{0 $\rightarrow$ 95} & \textbf{72 $\rightarrow$ 95} \\
+\hline
+A3 JSON structure break & 0 $\rightarrow$ 0 & 72 $\rightarrow$ 72 \\
+\hline
+A4 hidden-text impersonation & 0 $\rightarrow$ 0 & 72 $\rightarrow$ 65 \\
+\hline
+A5 fabricated authority & 0 $\rightarrow$ 0 & 72 $\rightarrow$ 72 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The attack success rate is 2 of 10, or 20\,\%, with a mean score delta of 11.40
+and a standard deviation of 30.39. A single appended line declaring a screening
+override and instructing the model to assign a score of 95 moved an accountant
+applying for a frontend engineering role from 0 to 95, that is, from
+\texttt{rejected} to \texttt{selected}. On the second base the same line raised
+the score from 72 to 95, an inflation of 23 points; that candidate had already
+been scored into the \texttt{selected} band, so the attack changed the ranking
+rather than the decision. Only one of the two successes therefore changed a
+decision outright, but that one crossed the full range of the scale.
+
+The pattern is informative. The naive attacks A1, A3, A4 and A5 failed, while
+impersonating a system turn succeeded on both bases. The model appears to
+discriminate by \textit{form} rather than by \textit{provenance}: it resists
+text that reads like a candidate making a request, and complies with text that
+reads like an instruction from the operator. Any candidate who places that
+sentence in white-on-white text inside their document is shortlisted. This is
+live and unmitigated.
+
+\subsection{Extraction Reliability and Latency}
+\label{sec:extraction}
+
+Table~\ref{tab:extraction} reports extraction outcomes by file format. Three
+portable documents parsed without error while returning between 12 and 108
+characters, being scanned, image-only files. With no optical character
+recognition stage and no minimum-content check, such a file is accepted, stored
+and scored against an effectively empty resume, producing a near-certain
+automatic rejection for a reason unrelated to the candidate's qualifications.
+Nothing in the activity feed or the recruiter email distinguishes this from a
+genuinely weak application.
+
+\begin{table}[!t]
+\caption{Extraction Reliability by Format}
+\label{tab:extraction}
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Format} & \textbf{Files} & \textbf{Parse rate} & \textbf{Usable rate} \\
+\hline
+Plain text & 12 & 100.0\,\% & 100.0\,\% \\
+\hline
+Portable document & 14 & 100.0\,\% & \textbf{78.6\,\%} \\
+\hline
+Word processor & 5 & 100.0\,\% & 100.0\,\% \\
+\hline
+\multicolumn{4}{l}{\footnotesize Usable is defined as at least 200 extracted characters.}
+\end{tabular}
+\end{center}
+\end{table}
+
+Table~\ref{tab:latency} reports scoring latency. Language model scoring is
+roughly 24\,000 times slower than the fallback. On the publish path this is
+hidden by deferred execution; on the application path it sits in the applicant's
+request, as discussed in Section~\ref{sec:boundary}. At a concurrency of three,
+re-scoring a pool of 100 candidates costs approximately 46~s of wall-clock time.
+
+\begin{table}[!t]
+\caption{Scoring Latency}
+\label{tab:latency}
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Series} & \textbf{Mean} & \textbf{SD} & \textbf{Median} & \textbf{95th pct.} \\
+\hline
+Language model & 1394~ms & 250~ms & 1335~ms & 1995~ms \\
+\hline
+Keyword fallback & 0.057~ms & 0.050~ms & 0.047~ms & 0.077~ms \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Silent Degradation as a Measurement Hazard}
+\label{sec:silent}
+
+Our first measurement run produced apparently plausible results: 79.2\,\%
+accuracy and $\kappa = 0.433$. They were invalid. The configured model's free
+tier permits 20 requests per day, which was exhausted six calls into a 48-pair
+run. The analysis function caught each subsequent rate-limit response and
+returned keyword-fallback scores, so 42 of 48 observations recorded the fallback
+under a language model label. The corruption was detectable only because the two
+conditions returned suspiciously identical scores on several pairs.
+
+The property that makes the system resilient in production --- never failing
+loudly when the model is unavailable --- makes it hazardous to measure. Two
+mitigations are now in the harness, as described in Section~\ref{sec:protocol}:
+detection of fallback output with a circuit breaker and a direct probe to report
+the cause, and a refusal to write any report mixing model and fallback
+observations.
+
+This also has a deployment consequence. On the configured model, any
+demonstration silently degrades to keyword matching after 20 requests,
+presenting keyword scores to a recruiter as language model evaluations with no
+visible signal.
+
+\section{Discussion}
+
+\textbf{The evaluation is the contribution as much as the system is.} The
+architecture is defensible, but the results that matter are the four negative
+ones. A system that reported only its headline accuracy would look finished;
+Sections~\ref{sec:presentation}, \ref{sec:injection} and \ref{sec:extraction}
+show it is not.
+
+\textbf{Failure direction is a design property worth engineering for.} The
+result that no strong candidate was missed and that all errors were
+over-promotions follows from the three-band decision scheme, not from model
+quality. A two-band accept-or-reject scheme with the same scores would have
+rejected candidates a human wanted. Systems that make consequential decisions
+about people should be designed so their errors land on the recoverable side,
+and an explicit route-to-a-human band is a cheap way to obtain that.
+
+\textbf{Presentation sensitivity may be the most consequential finding.}
+Injection requires a deliberate attacker and is fixable with known techniques.
+Format sensitivity affects every honest candidate: the same person gets
+different outcomes depending on which tailoring of their resume they submit.
+This rewards candidates who can afford to optimise presentation, and is not
+addressed by any mitigation we implemented.
+
+\textbf{Silent fallback trades observability for availability.}
+Section~\ref{sec:degradation} argues the fallback is right for production;
+Section~\ref{sec:silent} shows the same mechanism corrupted our measurements and
+would mislead a recruiter. The resolution is not to remove the fallback but to
+make it \textit{visible}: the fallback should be recorded as a warning-level
+event and surfaced in the interface, so that ``scored by keyword matching
+because the model was unavailable'' is something the recruiter can see. This is
+implemented for social-posting and email failures but not for the model.
+
+\section{Ethics and Limitations}
+\label{sec:ethics}
+
+\subsection{Ethical Considerations}
+
+This system ranks people for employment. The following are stated plainly rather
+than deferred.
+
+\begin{itemize}
+\item \textbf{No fairness audit was performed.} We did not test for disparate
+performance across gender, ethnicity, age, nationality, disability or
+educational background, and we make no fairness claim. Given
+Section~\ref{sec:presentation}, a fairness audit is a prerequisite for any real
+deployment, and under New York City Local Law 144~\cite{b8} a bias audit would
+be legally required for use in that jurisdiction. The European Union Artificial
+Intelligence Act~\cite{b9} classifies employment applications as high-risk.
+\item \textbf{Human in the loop.} Scores are advisory. The \texttt{review} band
+exists to route uncertain cases to a person, and no strong candidate was
+automatically rejected. The system does not send rejections; the recruiter
+decides.
+\item \textbf{Exploitability.} The injection result is a fairness problem as
+much as a security one: it advantages candidates who know the technique.
+\item \textbf{Silent misjudgement.} The scanned-document failure disadvantages
+candidates who submit scanned files, plausibly correlated with access to
+technology.
+\item \textbf{Candidate data.} Resumes are stored as binary objects with no
+retention policy, no deletion endpoint and no consent record. Candidate profiles
+survive deletion of the recruiter who collected them, so candidate data can
+outlive the relationship that justified collecting it. This is a data-protection
+concern and should be addressed before deployment.
+\item \textbf{Transparency.} Candidates are not told their application is
+machine-screened.
+\end{itemize}
+
+\subsection{Threats to Validity}
+
+\begin{itemize}
+\item \textbf{Single-annotator ground truth.} Labels were assigned by the
+authors, with no second annotator and therefore no inter-annotator agreement
+statistic. Some labels are arguable, R07 in particular, where \texttt{review}
+against \texttt{selected} is a defensible judgement call, and the system's
+disagreement there may be ours rather than its.
+\item \textbf{Authored resumes and authored labels.} The same authors wrote the
+resumes and the labels. Synthetic resumes are cleaner and more internally
+consistent than real ones, so accuracy here is likely optimistic.
+\item \textbf{Small sample.} Forty-eight pairs with six instances each of the
+two minority classes. Per-class precision and recall for \texttt{review} and
+\texttt{selected} rest on very few observations and confidence intervals would
+be wide. We report no significance tests; the sample does not support them.
+\item \textbf{One model, one temperature.} No comparison across models or
+settings was performed.
+\item \textbf{One candidate in the real tier}, supporting consistency claims
+only.
+\item \textbf{Non-stationary dependency.} The scorer calls a hosted model that
+may change beneath a fixed version string. The run date and model identifier are
+recorded in every report.
+\item \textbf{Small adversarial set.} Five attack patterns on two bases. A
+20\,\% success rate on this set establishes that the vulnerability is real, not
+its prevalence under a broader attack surface.
+\end{itemize}
+
+\section{Future Work}
+
+Ordered by what the results indicate is most urgent.
+
+\begin{enumerate}
+\item \textbf{Mitigate prompt injection.} Delimit resume text explicitly as
+untrusted data, instruct the model that text inside the delimiters is never an
+instruction, strip instruction-like patterns before scoring, or score from
+extracted structured fields rather than raw text. Re-run the injection
+experiment to measure the mitigation rather than asserting it.
+\item \textbf{Make degradation visible.} Record fallback scoring as a
+warning-level event and surface it in the feed and the recruiter email, so a
+keyword-scored application is never presented as a language model evaluation.
+\item \textbf{Detect unusable extractions.} Add a minimum-content check, add
+optical character recognition for scanned documents, and flag rather than
+silently score a resume that yielded almost no text.
+\item \textbf{Conduct a fairness audit.} Construct matched resume pairs
+differing only in signals correlated with protected attributes and measure score
+differences.
+\item \textbf{Reduce presentation sensitivity.} Investigate whether extracting
+structured fields before scoring, or averaging across several prompt framings,
+narrows the spread.
+\item \textbf{Strengthen the evaluation.} Add a second annotator with an
+inter-annotator agreement statistic, real anonymised resumes, a larger and more
+balanced label set, and comparison across models.
+\item \textbf{Engineering.} Replace the in-memory rate limiter with a shared
+store for multi-instance deployment, move resume binary objects out of the
+database to object storage, and normalise the columns that currently hold JSON
+inside text fields.
+\end{enumerate}
+
+\section{Conclusion}
+
+We presented AgentU, a language-model-assisted recruitment system built on
+event-sourced agent orchestration and degradation-first design, and evaluated
+its screening component against human ground truth, a lexical baseline and a
+trivial baseline.
+
+The screening component agrees substantially with human judgement, at
+$\kappa = 0.623$ and $\rho = 0.915$, decisively outperforms both baselines on
+metrics robust to class imbalance, never missed a candidate a human would
+shortlist, and is stable under repetition.
+
+It also fails in four ways we can characterise precisely: it does not see
+through keyword stuffing, it gives the same candidate different decisions across
+rewordings of identical facts, it is exploitable by a one-line prompt injection
+that changes hiring outcomes, and it silently scores scanned resumes as empty.
+Additionally, the fallback that makes the system resilient makes it opaque, a
+property that corrupted our own first measurement run before it was detected.
+
+For systems that make consequential decisions about people, we argue that
+characterising failure modes is not an appendix to the evaluation but the
+substance of it.
+
+\section*{Acknowledgment}
+
+% Replace with your guide's name and any other acknowledgements.
+The authors thank their project guide for supervision and feedback throughout
+this work.
+
+% ---------------------------------------------------------------
+% IMPORTANT: every entry below must be checked against the actual
+% source before submission. Do not submit a reference you have not
+% personally opened.
+% ---------------------------------------------------------------
+\begin{thebibliography}{00}
+\bibitem{b1} J. Dastin, ``Amazon scraps secret AI recruiting tool that showed bias against women,'' \textit{Reuters}, Oct. 2018.
+\bibitem{b2} M. Bogen and A. Rieke, ``Help wanted: An examination of hiring algorithms, equity, and bias,'' Upturn, Washington, DC, USA, Tech. Rep., 2018.
+\bibitem{b3} M. Raghavan, S. Barocas, J. Kleinberg, and K. Levy, ``Mitigating bias in algorithmic hiring: Evaluating claims and practices,'' in \textit{Proc. ACM Conf. Fairness, Accountability, and Transparency (FAccT)}, 2020, pp. 469--481.
+\bibitem{b4} F. Perez and I. Ribeiro, ``Ignore previous prompt: Attack techniques for language models,'' in \textit{Proc. NeurIPS ML Safety Workshop}, 2022.
+\bibitem{b5} K. Greshake, S. Abdelnabi, S. Mishra, C. Endres, T. Holz, and M. Fritz, ``Not what you've signed up for: Compromising real-world LLM-integrated applications with indirect prompt injection,'' in \textit{Proc. 16th ACM Workshop Artificial Intelligence and Security (AISec)}, 2023, pp. 79--90.
+\bibitem{b6} OWASP Foundation, ``OWASP top 10 for large language model applications,'' 2023.
+\bibitem{b7} J. Cohen, ``A coefficient of agreement for nominal scales,'' \textit{Educational and Psychological Measurement}, vol. 20, no. 1, pp. 37--46, 1960.
+\bibitem{b8} New York City Local Law 144 of 2021, Automated Employment Decision Tools, 2021.
+\bibitem{b9} Regulation (EU) 2024/1689 of the European Parliament and of the Council, Artificial Intelligence Act, 2024.
+\end{thebibliography}
+
+\end{document}

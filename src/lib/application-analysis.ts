@@ -54,15 +54,24 @@ export async function analyzeApplication(
 }
 
 /**
- * Deterministic keyword-overlap scorer used when the AI call fails.
- * Exported so the evaluation harness can measure it as a baseline condition.
+ * The distinct requirement terms a resume is matched against. Exported so the screening
+ * analysis agent measures term coverage exactly the way the fallback scorer does, rather
+ * than drifting to a second definition of "a requirement term".
  */
-export function keywordFallback(resumeText: string, requirements: string) {
+export function requirementTerms(requirements: string): string[] {
   const terms = requirements
     .toLowerCase()
     .split(/[^a-z0-9+#.-]+/)
     .filter((term) => term.length >= 3)
-  const uniqueTerms = [...new Set(terms)]
+  return [...new Set(terms)]
+}
+
+/**
+ * Deterministic keyword-overlap scorer used when the AI call fails.
+ * Exported so the evaluation harness can measure it as a baseline condition.
+ */
+export function keywordFallback(resumeText: string, requirements: string) {
+  const uniqueTerms = requirementTerms(requirements)
   const resume = resumeText.toLowerCase()
   const matchedTerms = uniqueTerms.filter((term) => resume.includes(term))
   const score = uniqueTerms.length === 0
