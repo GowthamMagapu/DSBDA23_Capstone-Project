@@ -1,26 +1,10 @@
-import { cache } from 'react'
 import type { Metadata } from 'next'
-import { prisma } from '@/lib/prisma'
 import { buildPublicJobUrl } from '@/lib/app-url'
 import { buildJobPostingJsonLd, serializeJsonLd } from '@/lib/job-sharing'
+import { getPublishedJob } from '@/lib/public-job'
 import CareersClient from './CareersClient'
 
 type Props = { params: Promise<{ slug: string }> }
-
-// Shared by generateMetadata and the page so the job is only queried once per request.
-const getPublishedJob = cache((slug: string) =>
-  prisma.job.findFirst({
-    where: { OR: [{ slug }, { id: slug }], status: 'published' },
-    select: {
-      title: true,
-      slug: true,
-      description: true,
-      listing: true,
-      createdAt: true,
-      owner: { select: { company: { select: { name: true, about: true, location: true, website: true } } } },
-    },
-  })
-)
 
 // Server-rendered metadata so LinkedIn (and other link unfurlers) show a rich preview of the role.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -38,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     alternates: { canonical: url },
     openGraph: { type: 'website', url, title, description, siteName: company?.name ?? 'AgentU' },
-    twitter: { card: 'summary', title, description },
+    twitter: { card: 'summary_large_image', title, description },
   }
 }
 

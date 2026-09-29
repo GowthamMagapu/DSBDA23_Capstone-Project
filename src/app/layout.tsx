@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { SessionProvider } from 'next-auth/react'
 import './globals.css'
+import { getAppUrl } from '@/lib/app-url'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -10,6 +11,9 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  // Resolves relative metadata URLs (e.g. generated og:image files) to absolute ones, which
+  // LinkedIn and other link unfurlers require.
+  metadataBase: new URL(getAppUrl()),
   title: 'AgentU | Multi-Agent HR Automation',
   description: 'Automate hiring with intelligent AI agents. Next-generation recruitment platform powered by autonomous agents for sourcing, screening, and analysis.',
   keywords: ['HR automation', 'AI recruitment', 'talent acquisition', 'hiring automation', 'multi-agent system'],
@@ -20,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://talentflow.ai',
+    url: '/',
     title: 'AgentU | Multi-Agent HR Automation',
     description: 'Automate hiring with intelligent AI agents. Next-generation recruitment platform.',
     siteName: 'AgentU',
