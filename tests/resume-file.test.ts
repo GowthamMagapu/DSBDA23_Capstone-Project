@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { isAllowedResumeFile, resumeMimeTypeFor, sanitizeFileName } from '@/lib/resume-file'
+import { MAX_RESUME_BYTES, isAllowedResumeFile, resumeMimeTypeFor, sanitizeFileName } from '@/lib/resume-file'
 
 describe('resume-file — upload allowlist and filename safety', () => {
   test('accepts the documented resume formats, case-insensitively', () => {
@@ -46,5 +46,13 @@ describe('resume-file — upload allowlist and filename safety', () => {
     assert.equal(sanitizeFileName(`${'a'.repeat(400)}.pdf`).length, 200)
     assert.equal(sanitizeFileName(''), 'resume')
     assert.equal(sanitizeFileName('"'), 'resume')
+  })
+})
+
+describe('MAX_RESUME_BYTES — hosting body limit', () => {
+  test('keeps a resume plus form fields under the 4.5 MB serverless request cap', () => {
+    const vercelBodyLimit = 4.5 * 1024 * 1024
+    const formFieldHeadroom = 64 * 1024
+    assert.ok(MAX_RESUME_BYTES + formFieldHeadroom < vercelBodyLimit)
   })
 })

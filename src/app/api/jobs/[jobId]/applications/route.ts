@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { analyzeApplication } from '@/lib/application-analysis'
 import { extractResumeText } from '@/lib/resume-text'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { isAllowedResumeFile, resumeMimeTypeFor, sanitizeFileName } from '@/lib/resume-file'
+import { MAX_RESUME_BYTES, MAX_RESUME_LABEL, isAllowedResumeFile, resumeMimeTypeFor, sanitizeFileName } from '@/lib/resume-file'
 import { logAgentEvent } from '@/lib/agent-events'
 import { notifyNewApplication } from '@/lib/notifications'
 import { z } from 'zod'
@@ -59,7 +59,7 @@ export async function POST(
   const formData = await request.formData()
   const resume = formData.get('resume')
   if (!(resume instanceof File) || resume.size === 0) return NextResponse.json({ message: 'Please attach your resume.' }, { status: 400 })
-  if (resume.size > 10 * 1024 * 1024) return NextResponse.json({ message: 'Resume must be smaller than 10 MB.' }, { status: 400 })
+  if (resume.size > MAX_RESUME_BYTES) return NextResponse.json({ message: `Resume must be smaller than ${MAX_RESUME_LABEL}.` }, { status: 400 })
   if (!isAllowedResumeFile(resume.name)) {
     return NextResponse.json(
       { message: 'Please upload your resume as PDF, DOC, DOCX, RTF, or TXT.' },
@@ -82,7 +82,12 @@ export async function POST(
   const resumeFileName = sanitizeFileName(resume.name)
   const resumeMimeType = resumeMimeTypeFor(resume.name)
   const resumeData = Buffer.from(await resume.arrayBuffer())
-  const extractedText = await extractResumeText(resume, resumeData)
+  // A corrupt, encrypted, or scanned-image resume must not take down the submission —
+  // the cover letter still carries enough signal to score against.
+  const extractedText = await extractResumeText(resume, resumeData).catch((error) => {
+    console.error('Resume text extraction failed', error)
+    return ''
+  })
   const resumeText = `${extractedText}\n${parsed.data.coverLetter}`.slice(0, 20000)
   const analysis = await analyzeApplication(resumeText, job.title, job.requirements)
   const profile = await prisma.candidateProfile.upsert({

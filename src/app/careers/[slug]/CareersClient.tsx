@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import { MAX_RESUME_BYTES, MAX_RESUME_LABEL } from '@/lib/resume-file'
 
 type PublicCompany = {
   name: string
@@ -55,16 +56,27 @@ export default function CareersClient({ slug }: { slug: string }) {
       setSubmitting(false)
       return
     }
+    if (resume.size > MAX_RESUME_BYTES) {
+      setError(`Resume must be smaller than ${MAX_RESUME_LABEL}. Try exporting it as a PDF.`)
+      setSubmitting(false)
+      return
+    }
     const body = new FormData()
     body.append('candidateName', form.candidateName)
     body.append('email', form.email)
     body.append('coverLetter', form.coverLetter)
     body.append('resume', resume)
-    const response = await fetch(`/api/jobs/${slug}/applications`, { method: 'POST', body })
-    const data = await response.json()
-    if (!response.ok) setError(data.message || 'Unable to submit application.')
-    else setSubmitted(true)
-    setSubmitting(false)
+    try {
+      const response = await fetch(`/api/jobs/${slug}/applications`, { method: 'POST', body })
+      // A crashed route replies with an HTML error page, so never assume the body is JSON.
+      const data = (await response.json().catch(() => ({}))) as { message?: string }
+      if (!response.ok) setError(data.message || `Unable to submit application (${response.status}).`)
+      else setSubmitted(true)
+    } catch {
+      setError('Could not reach the server. Please check your connection and try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (loadError) return (
@@ -124,7 +136,7 @@ export default function CareersClient({ slug }: { slug: string }) {
           <div className="mt-7 space-y-4">
             <input required value={form.candidateName} onChange={(event) => setForm({ ...form, candidateName: event.target.value })} placeholder="Full name" className="w-full border border-white/15 bg-black px-4 py-3 text-sm outline-none placeholder:text-white/35 focus:border-white/50" />
             <input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Email address" className="w-full border border-white/15 bg-black px-4 py-3 text-sm outline-none placeholder:text-white/35 focus:border-white/50" />
-            <label className="block border border-dashed border-white/20 bg-black px-4 py-4 text-sm text-white/55">Resume attachment<input required type="file" accept=".pdf,.doc,.docx,.txt,.rtf" onChange={(event) => setResume(event.target.files?.[0] || null)} className="mt-3 block w-full text-xs text-white/60 file:mr-3 file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-medium file:text-black" /></label>
+            <label className="block border border-dashed border-white/20 bg-black px-4 py-4 text-sm text-white/55">Resume attachment <span className="text-white/35">(PDF, DOC, DOCX, RTF or TXT, max {MAX_RESUME_LABEL})</span><input required type="file" accept=".pdf,.doc,.docx,.txt,.rtf" onChange={(event) => setResume(event.target.files?.[0] || null)} className="mt-3 block w-full text-xs text-white/60 file:mr-3 file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-medium file:text-black" /></label>
             <textarea required minLength={30} value={form.coverLetter} onChange={(event) => setForm({ ...form, coverLetter: event.target.value })} placeholder="Cover letter" rows={8} className="w-full resize-none border border-white/15 bg-black px-4 py-3 text-sm outline-none placeholder:text-white/35 focus:border-white/50" />
             <button disabled={submitting} className="w-full bg-white px-4 py-3 text-sm font-medium text-black hover:bg-white/80 disabled:opacity-50">{submitting ? 'Submitting...' : 'Submit application'}</button>
             {error && <p className="text-sm text-white/70">{error}</p>}

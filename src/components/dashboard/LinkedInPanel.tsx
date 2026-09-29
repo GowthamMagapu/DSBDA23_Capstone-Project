@@ -76,14 +76,16 @@ export function LinkedInPanel({ onChange }: { onChange?: () => void }) {
 
   return (
     <section className="border border-white/10 bg-white/5 p-6">
-      <p className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-white/40"><Share2 className="h-3.5 w-3.5" /> LinkedIn auto-post</p>
+      <p className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-white/40"><Share2 className="h-3.5 w-3.5" /> LinkedIn</p>
 
       {!status ? (
         <p className="mt-4 text-sm text-white/45">Checking connection…</p>
       ) : !status.configured ? (
         <div className="mt-3 text-sm leading-6 text-white/55">
-          <p>Add <code className="text-white/80">LINKEDIN_CLIENT_ID</code> and <code className="text-white/80">LINKEDIN_CLIENT_SECRET</code> to the server environment to let recruiters connect their LinkedIn accounts.</p>
-          <p className="mt-2 text-xs text-white/40">Authorized redirect URL: <span className="break-all text-white/60">{status.redirectUri}</span></p>
+          <h3 className="text-lg font-medium text-white">Share jobs in one click</h3>
+          <p className="mt-1">Use <span className="text-white/80">Share on LinkedIn</span> on any job card. It opens LinkedIn&apos;s post composer with the job link attached and copies a ready-made post to your clipboard. No LinkedIn app or approval needed.</p>
+          <p className="mt-2">Published roles are also marked up for Google for Jobs, so they can appear in Google&apos;s job search automatically.</p>
+          <p className="mt-3 text-xs text-white/40">Optional fully-automatic posting needs an approved LinkedIn developer app: set <code className="text-white/60">LINKEDIN_CLIENT_ID</code> and <code className="text-white/60">LINKEDIN_CLIENT_SECRET</code>, with redirect URL <span className="break-all text-white/60">{status.redirectUri}</span>.</p>
         </div>
       ) : !connection ? (
         <div className="mt-3">

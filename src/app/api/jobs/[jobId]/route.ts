@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/app/api/auth/[...nextauth]/route'
+import { buildPublicJobUrl } from '@/lib/app-url'
+import { withdrawJob } from '@/lib/job-distribution'
 
 export async function GET(
   _request: Request,
@@ -24,5 +26,7 @@ export async function DELETE(
   if (!job) return NextResponse.json({ message: 'Job not found' }, { status: 404 })
 
   await prisma.job.delete({ where: { id: jobId } })
+  const ownerId = session.user.id
+  after(() => withdrawJob({ ownerId, title: job.title, publicUrl: buildPublicJobUrl(job.slug) }))
   return NextResponse.json({ success: true })
 }

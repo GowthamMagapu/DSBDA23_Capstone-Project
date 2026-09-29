@@ -10,6 +10,12 @@
 // attacker who substitutes their own key can capture the password. It is therefore enabled
 // only when the database is local, or when explicitly opted into for an environment where
 // the link is known to be trusted (e.g. a private network or a TLS-terminated tunnel).
+//
+// Hosted databases (TiDB Cloud, Aiven, ...) require TLS. It is enabled by DATABASE_SSL=true or
+// by `?sslaccept=strict` in DATABASE_URL — the parameter the Prisma CLI itself needs for
+// `prisma db push`, so one URL serves both. The server certificate is always verified: against
+// the system CAs by default, or against DATABASE_SSL_CA (PEM contents) for providers such as
+// Aiven that sign with their own CA. Over TLS, MySQL 8 auth completes without key retrieval.
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
 
@@ -25,6 +31,15 @@ export type MariaDbConnectionConfig = {
   database: string
   connectionLimit: number
   allowPublicKeyRetrieval?: boolean
+  ssl?: { rejectUnauthorized: true; ca?: string }
+}
+
+export function buildSslConfig(databaseUrl: URL): MariaDbConnectionConfig['ssl'] {
+  const requested = process.env.DATABASE_SSL === 'true' || databaseUrl.searchParams.get('sslaccept') === 'strict'
+  if (!requested) return undefined
+  // Env UIs often flatten a PEM onto one line with literal "\n" separators.
+  const ca = process.env.DATABASE_SSL_CA?.replace(/\\n/g, '\n').trim()
+  return ca ? { rejectUnauthorized: true, ca } : { rejectUnauthorized: true }
 }
 
 /** Builds the adapter config from a parsed DATABASE_URL. */
@@ -41,5 +56,6 @@ export function buildMariaDbConfig(databaseUrl: URL): MariaDbConnectionConfig {
     database: databaseUrl.pathname.slice(1),
     connectionLimit: 5,
     allowPublicKeyRetrieval,
+    ssl: buildSslConfig(databaseUrl),
   }
 }

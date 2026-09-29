@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { shareJobOnLinkedIn } from '@/lib/linkedin'
 import { buildPublicJobUrl } from '@/lib/app-url'
 import { logAgentEvent } from '@/lib/agent-events'
+import { parseJobTags } from '@/lib/job-sharing'
 
 // Re-shares a published job on LinkedIn, e.g. after the recruiter connects or reconnects an account.
 export async function POST(
@@ -29,7 +30,7 @@ export async function POST(
     companyName: company.name,
     location: company.location,
     listingPreview: company.about,
-    tags: parseTags(job.tags),
+    tags: parseJobTags(job.tags),
     publicUrl,
   })
 
@@ -49,11 +50,3 @@ export async function POST(
   return NextResponse.json(linkedinPost, { status: httpStatus })
 }
 
-function parseTags(value: string | null): string[] {
-  try {
-    const parsed = value ? JSON.parse(value) : []
-    return Array.isArray(parsed) ? parsed.map(String) : []
-  } catch {
-    return []
-  }
-}

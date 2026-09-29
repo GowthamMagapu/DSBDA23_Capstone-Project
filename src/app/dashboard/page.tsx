@@ -7,6 +7,9 @@ import Link from 'next/link'
 import { CompanyProfilePanel, type Company } from '@/components/dashboard/CompanyProfilePanel'
 import { LinkedInPanel } from '@/components/dashboard/LinkedInPanel'
 import { AgentActivityFeed, type AgentEvent } from '@/components/dashboard/AgentActivityFeed'
+import ScreeningIntegrityPanel from '@/components/dashboard/ScreeningIntegrityPanel'
+import type { ScreeningAnalysis } from '@/lib/screening-analysis'
+import { buildLinkedInShareUrl, createJobAnnouncementText, parseJobTags } from '@/lib/job-sharing'
 
 type Job = {
   id: string
@@ -52,6 +55,7 @@ export default function DashboardPage() {
     narrative: string
     recommendations: string[]
     bottlenecks: string[]
+    screening: ScreeningAnalysis
   } | null>(null)
   const [form, setForm] = useState({ title: '', description: '', requirements: '', autoApplyExistingCandidates: false })
   const [message, setMessage] = useState('')
@@ -59,6 +63,7 @@ export default function DashboardPage() {
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null)
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null)
   const [retryingJobId, setRetryingJobId] = useState<string | null>(null)
+  const [sharedJobId, setSharedJobId] = useState<string | null>(null)
   const [company, setCompany] = useState<Company | null>(null)
   const [companyLoaded, setCompanyLoaded] = useState(false)
   const [accountEmail, setAccountEmail] = useState<string | null>(null)
@@ -131,7 +136,7 @@ export default function DashboardPage() {
         ? 'Shared on LinkedIn.'
         : linkedinStatus === 'failed'
           ? `LinkedIn post failed: ${job.linkedinPost?.message || 'unknown error'}`
-          : job.linkedinPost?.message || ''
+          : 'Use "Share on LinkedIn" on the job card to post it.'
 
       setJobs((current) => [{ ...job, _count: { applications: 0 } }, ...current])
       setSelectedJob({ ...job, _count: { applications: 0 } })
@@ -154,6 +159,23 @@ export default function DashboardPage() {
   }
 
   const publicUrl = (slug: string) => `${window.location.origin}/careers/${slug}`
+
+  // LinkedIn's share dialog only accepts a URL, so the ready-made post text goes to the clipboard.
+  // The copy starts before the link opens LinkedIn, while this page still has focus.
+  const copyLinkedInPost = (job: Job) => {
+    if (!job.slug || !company) return
+    const text = createJobAnnouncementText({
+      title: job.title,
+      companyName: company.name,
+      location: company.location,
+      tags: parseJobTags(job.tags),
+      url: publicUrl(job.slug),
+    })
+    navigator.clipboard.writeText(text).then(() => {
+      setSharedJobId(job.id)
+      setTimeout(() => setSharedJobId((current) => (current === job.id ? null : current)), 4000)
+    }).catch(() => {})
+  }
 
   const copyPublicLink = async (job: Job) => {
     if (!job.slug) return
@@ -206,7 +228,7 @@ export default function DashboardPage() {
             {[
               { id: 'hr-agent', number: '01', title: 'HR Agent', text: 'Publish roles, receive applications, and find the strongest matches.', active: true },
               { id: 'management-agent', number: '02', title: 'Management', text: 'Coordinate interviews, feedback, and candidate communication.', active: false },
-              { id: 'analysis-agent', number: '03', title: 'Analysis', text: 'Understand your pipeline with hiring insights and reports.', active: false },
+              { id: 'analysis-agent', number: '03', title: 'Analysis', text: 'Score distribution, confidence, and screening-integrity checks for a selected role.', active: true },
             ].map((agent) => (
               <a key={agent.id} href={`#${agent.id}`} className={`border p-5 transition-colors ${agent.active ? 'border-white/50 bg-white text-black' : 'border-white/15 bg-white/5 text-white hover:border-white/40'}`}>
                 <p className={`text-xs tracking-[0.2em] ${agent.active ? 'text-black/45' : 'text-white/40'}`}>{agent.number}</p>
@@ -277,14 +299,24 @@ export default function DashboardPage() {
                   {job.linkedinStatus === 'posted' && job.linkedinPostUrl && (
                     <a href={job.linkedinPostUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-emerald-400/30 px-3 py-2 text-xs text-emerald-300 hover:bg-emerald-400/10"><Share2 className="h-3.5 w-3.5" /> LinkedIn post</a>
                   )}
-                  {job.linkedinStatus !== 'posted' && (
-                    <button onClick={() => retryLinkedIn(job)} disabled={retryingJobId === job.id} title={job.linkedinMessage ?? undefined} className="inline-flex items-center gap-2 border border-white/15 px-3 py-2 text-xs text-white/70 hover:bg-white/10 disabled:opacity-50"><RefreshCw className={`h-3.5 w-3.5 ${retryingJobId === job.id ? 'animate-spin' : ''}`} /> {job.linkedinStatus === 'failed' ? 'Retry LinkedIn' : 'Post to LinkedIn'}</button>
+                  {job.linkedinStatus !== 'posted' && job.slug && company && (
+                    <a href={buildLinkedInShareUrl(publicUrl(job.slug))} target="_blank" rel="noopener noreferrer" onClick={() => copyLinkedInPost(job)} title="Opens LinkedIn's share dialog and copies a ready-made post to your clipboard" className="inline-flex items-center gap-2 border border-white/15 px-3 py-2 text-xs text-white/70 hover:bg-white/10">{sharedJobId === job.id ? <Check className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />} {sharedJobId === job.id ? 'Post text copied — paste it' : 'Share on LinkedIn'}</a>
+                  )}
+                  {job.linkedinStatus === 'failed' && (
+                    <button onClick={() => retryLinkedIn(job)} disabled={retryingJobId === job.id} title={job.linkedinMessage ?? undefined} className="inline-flex items-center gap-2 border border-white/15 px-3 py-2 text-xs text-white/70 hover:bg-white/10 disabled:opacity-50"><RefreshCw className={`h-3.5 w-3.5 ${retryingJobId === job.id ? 'animate-spin' : ''}`} /> Retry auto-post</button>
                   )}
                   <button onClick={() => deleteJob(job)} disabled={deletingJobId === job.id} className="inline-flex items-center gap-2 border border-white/15 px-3 py-2 text-xs text-white/70 hover:bg-white/10 disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /> {deletingJobId === job.id ? 'Deleting...' : 'Delete'}</button>
                 </div>
               </div>
             </article>
           ))}
+
+          {/* The anchor the "03 Analysis" card links to must exist even before a job is
+              picked, otherwise that link silently goes nowhere. */}
+          {!selectedJob && <div id="analysis-agent" className="border-t border-white/10 pt-6">
+            <div className="mb-4 flex items-center gap-3"><Sparkles className="h-4 w-4 text-white" /><h2 className="text-xl font-medium">AI analysis</h2></div>
+            <p className="text-sm leading-6 text-white/45">Select a job above to see its score distribution, confidence intervals, and screening-integrity report.</p>
+          </div>}
 
           {selectedJob && <div id="analysis-agent" className="border-t border-white/10 pt-6"><div className="mb-4 flex items-center gap-3"><Sparkles className="h-4 w-4 text-white" /><h2 className="text-xl font-medium">AI analysis for {selectedJob.title}</h2></div>
             {analysis ? (
@@ -312,6 +344,8 @@ export default function DashboardPage() {
                   <p className="text-xs uppercase tracking-[0.15em] text-white/40">Pipeline narrative</p>
                   <p className="mt-3 text-sm leading-6 text-white/70">{analysis.narrative}</p>
                 </div>
+
+                {analysis.screening && <ScreeningIntegrityPanel screening={analysis.screening} />}
 
                 <div className="grid gap-5 lg:grid-cols-2">
                   <div className="rounded-xl border border-white/10 bg-white/5 p-4">

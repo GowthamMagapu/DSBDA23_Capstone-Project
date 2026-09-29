@@ -7,6 +7,7 @@ import { shareJobOnLinkedIn } from '@/lib/linkedin'
 import { buildPublicJobUrl } from '@/lib/app-url'
 import { logAgentEvent } from '@/lib/agent-events'
 import { notifyCandidatePoolScored, notifyJobPublished } from '@/lib/notifications'
+import { distributeJob } from '@/lib/job-distribution'
 import { z } from 'zod'
 
 const jobSchema = z.object({
@@ -103,10 +104,19 @@ export async function POST(request: NextRequest) {
     message: linkedinPost.message,
   })
 
-  // Email and candidate-pool scoring run after the response so publishing stays fast;
-  // progress shows up in the live activity feed and the recruiter's inbox.
+  // Distribution, email and candidate-pool scoring run after the response so publishing stays
+  // fast; progress shows up in the live activity feed and the recruiter's inbox.
   after(async () => {
     try {
+      await distributeJob({
+        ownerId,
+        jobId: job.id,
+        title: job.title,
+        companyName: company.name,
+        location: company.location,
+        tags: listing.tags,
+        publicUrl,
+      })
       await notifyJobPublished({ ownerId, jobId: job.id, title: job.title, publicUrl, linkedin: linkedinPost })
 
       if (!parsed.data.autoApplyExistingCandidates) return

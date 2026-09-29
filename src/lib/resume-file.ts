@@ -15,6 +15,12 @@ function getExtension(fileName: string): string {
   return parts.length > 1 ? parts.pop()! : ''
 }
 
+// Hosting platforms cap request bodies (Vercel: 4.5 MB for the whole multipart request), and
+// an oversized upload is rejected before the route runs. 4 MB leaves room for the other fields,
+// and the careers page checks it client-side so applicants get a clear message.
+export const MAX_RESUME_BYTES = 4 * 1024 * 1024
+export const MAX_RESUME_LABEL = '4 MB'
+
 export function isAllowedResumeFile(fileName: string): boolean {
   const extension = getExtension(fileName)
   return extension in EXTENSION_MIME_TYPES

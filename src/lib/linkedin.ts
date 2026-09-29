@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getAppUrl } from '@/lib/app-url'
 import { decryptSecret, encryptSecret } from '@/lib/secret-box'
+import { createJobAnnouncementText } from '@/lib/job-sharing'
 
 // Each recruiter connects their own LinkedIn account via OAuth 2.0. Posting as the member needs
 // the self-serve "Share on LinkedIn" + "Sign In with LinkedIn using OpenID Connect" products
@@ -95,31 +96,6 @@ export async function completeLinkedInConnection(userId: string, code: string) {
   })
 }
 
-export function createLinkedInPostText(input: {
-  title: string
-  companyName: string
-  location: string | null
-  tags: string[]
-  url: string
-}) {
-  const hashtags = ['Hiring', ...input.tags]
-    .map((tag) => `#${tag.replace(/[^a-z0-9]/gi, '')}`)
-    .filter((tag) => tag.length > 1)
-    .slice(0, 6)
-    .join(' ')
-
-  return [
-    `${input.companyName} is hiring! 🚀`,
-    '',
-    `We're looking for a ${input.title}${input.location ? ` (${input.location})` : ''} to join our team.`,
-    '',
-    'If you or someone you know would be a great fit, apply here:',
-    input.url,
-    '',
-    hashtags,
-  ].join('\n')
-}
-
 /** Posts a job to the recruiter's connected LinkedIn account (member or company page). */
 export async function shareJobOnLinkedIn(input: {
   userId: string
@@ -134,13 +110,13 @@ export async function shareJobOnLinkedIn(input: {
     return {
       success: false,
       status: 'skipped',
-      message: 'LinkedIn is not configured on the server. Add LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET.',
+      message: 'Automatic LinkedIn posting is off. Use "Share on LinkedIn" on the job card to post it.',
     }
   }
 
   const connection = await prisma.linkedInConnection.findUnique({ where: { userId: input.userId } })
   if (!connection) {
-    return { success: false, status: 'skipped', message: 'No LinkedIn account connected. Connect one from the dashboard to auto-post jobs.' }
+    return { success: false, status: 'skipped', message: 'No LinkedIn account connected for auto-posting. Use "Share on LinkedIn" on the job card to post it.' }
   }
 
   const accessToken = decryptSecret(connection.accessToken)
@@ -165,7 +141,7 @@ export async function shareJobOnLinkedIn(input: {
       specificContent: {
         'com.linkedin.ugc.ShareContent': {
           shareCommentary: {
-            text: createLinkedInPostText({
+            text: createJobAnnouncementText({
               title: input.title,
               companyName: input.companyName,
               location: input.location,

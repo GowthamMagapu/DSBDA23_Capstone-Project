@@ -52,3 +52,6 @@ prisma/migrations/
 # deliberately not committed. Regenerate locally per eval/README.md.
 eval/dataset/resumes/real/
 eval/results/
+
+# Personal documents kept next to the paper; not part of the project.
+docs/paper/TTD_ticket_srinivasu.pdf
