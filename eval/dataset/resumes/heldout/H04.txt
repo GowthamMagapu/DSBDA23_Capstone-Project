@@ -1,0 +1,24 @@
+Marcus Lindqvist
+Stockholm, Sweden | marcus.lindqvist@example.com
+
+SUMMARY
+Site reliability engineer, 6 years running production infrastructure on AWS and Kubernetes.
+
+EXPERIENCE
+Senior SRE, Nordpay (2021 - present)
+- Run 14 production EKS clusters on AWS across three regions; own VPC design, IAM
+  boundaries and RDS PostgreSQL fleets.
+- All infrastructure is Terraform; wrote the module library used by 30 service teams.
+- Designed the CI/CD path: GitHub Actions builds, Argo CD deploys with automated rollback.
+- Incident commander on the on-call rota; Prometheus, Grafana and PagerDuty alerting.
+- Reduced the monthly AWS bill by 28% through rightsizing and Savings Plans.
+
+Systems Engineer, Telekom Nord (2019 - 2021)
+- Administered 300 Linux servers; networking, patching and backup automation with Ansible.
+
+SKILLS
+AWS (EC2, VPC, IAM, RDS, S3, EKS), Kubernetes, Terraform, Helm, Argo CD, GitHub Actions,
+Linux, networking, Prometheus, Grafana, PagerDuty, Ansible, Go, Python, Bash
+
+EDUCATION
+MSc Computer Science, KTH Royal Institute of Technology, 2019

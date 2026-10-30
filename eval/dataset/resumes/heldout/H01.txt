@@ -1,0 +1,26 @@
+Priya Raman
+Bengaluru, India | priya.raman@example.com
+
+SUMMARY
+Frontend engineer with 6 years building production React applications in TypeScript.
+Owns performance and accessibility for a customer-facing web app used by 2M+ monthly users.
+
+EXPERIENCE
+Senior Frontend Engineer, Kestrel Commerce (2021 - present)
+- Lead engineer on the storefront, a Next.js and React application written in strict TypeScript.
+- Cut Largest Contentful Paint from 4.1s to 1.9s by splitting bundles, streaming server
+  rendering and moving third-party scripts off the critical path; tracks Core Web Vitals per release.
+- Ran a WCAG 2.1 AA audit, fixed 140 issues and added axe checks to CI so regressions fail the build.
+- Maintains the shared component library (40 components, Storybook, visual regression tests).
+- Moved global state from Redux to React Query plus small Zustand stores, removing 9k lines.
+
+Frontend Engineer, Lumio Health (2019 - 2021)
+- Built patient-facing booking flows in React and TypeScript with responsive CSS Grid layouts.
+- Introduced React Testing Library and Playwright; component test coverage went from 10% to 70%.
+
+SKILLS
+React, TypeScript, Next.js, CSS (Grid, Flexbox, custom properties), React Query, Zustand,
+Redux, Jest, React Testing Library, Playwright, Storybook, Lighthouse, axe, WCAG 2.1
+
+EDUCATION
+B.Tech Computer Science, PES University, 2019

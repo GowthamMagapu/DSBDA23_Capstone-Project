@@ -10,6 +10,16 @@ rather than a reimplementation, so results describe shipped behaviour including 
 npx tsx --env-file=.env eval/run.ts all      # every experiment
 npx tsx --env-file=.env eval/run.ts e1       # one experiment
 npx tsx --env-file=.env eval/run.ts e5       # needs no API access
+npx tsx --env-file=.env eval/run.ts e1-heldout   # E1 on the held-out tier
+```
+
+The paper's original results used `GEMINI_MODEL=gemini-3.5-flash-lite` and the v1 prompt. To
+compare prompts on that model:
+
+```bash
+GEMINI_MODEL=gemini-3.5-flash-lite EVAL_PROMPT=v1 npx tsx --env-file=.env eval/run.ts e1-heldout
+GEMINI_MODEL=gemini-3.5-flash-lite npx tsx --env-file=.env eval/run.ts e1
+GEMINI_MODEL=gemini-3.5-flash-lite npx tsx --env-file=.env eval/run.ts e1-heldout
 ```
 
 Each experiment writes two files into `eval/results/`:
@@ -24,14 +34,16 @@ Environment:
 | `GEMINI_API_KEY` | Required for E1–E4. Without it the harness aborts rather than silently measuring the fallback. |
 | `GEMINI_MODEL` | Defaults to `gemini-2.5-flash`. |
 | `EVAL_RPM` | Request ceiling, default 10/min to stay inside the Gemini free tier. |
+| `EVAL_PROMPT` | Screening prompt for the `gemini` condition: `v1` (the original study) or `v2` (rubric, the default and what production uses). v2 results are saved with a `-v2` suffix, so they never overwrite v1's. |
 | `EVAL_EXTRA_DOCS` | Optional directory of extra documents for E5, so formats absent from the committed dataset can be measured without adding third-party files to the repository. |
 
-AI results are cached under `eval/results/.cache/` keyed by input hash, so re-running a report
-costs no quota. E2 bypasses the cache by design — caching would defeat the measurement.
+AI results are cached under `eval/results/.cache/` keyed by model, prompt version and input
+hash, so re-running a report costs no quota. E2 bypasses the cache by design — caching would
+defeat the measurement.
 
 ## Dataset
 
-Two tiers, because they support different claims.
+Three tiers, because they support different claims.
 
 ### Synthetic tier — `eval/dataset/resumes/synthetic/` (committed)
 
@@ -57,6 +69,15 @@ accuracy.
 Using authored rather than collected resumes is a deliberate trade-off: it permits controlled
 adversarial cases and avoids processing real applicants' personal data, at the cost of not
 reflecting the messiness of a real applicant pool. Stated as a limitation, not hidden.
+
+### Held-out tier — `eval/dataset/resumes/heldout/` (committed)
+
+6 authored resumes × the same 4 job specifications = **24 labelled pairs**, with ground truth in
+`eval/dataset/labels-heldout.csv` (19 rejected / 3 review / 2 selected). The v2 prompt was
+written after studying the synthetic tier's errors, so its synthetic-tier score is optimistic;
+this tier was written and labelled before v2 was run, using the same labelling rules as the
+synthetic tier, and measures whether the improvement generalises. Report v1 and v2 on this tier
+side by side.
 
 ### Real tier — `eval/dataset/resumes/real/` (**not committed**)
 

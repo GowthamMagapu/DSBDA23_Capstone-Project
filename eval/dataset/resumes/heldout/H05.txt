@@ -1,0 +1,26 @@
+Sneha Kulkarni
+Pune, India | sneha.kulkarni@example.com
+
+SUMMARY
+MSc graduate (2025) specialising in natural language processing. Academic and project
+experience; looking for a first industry role.
+
+RESEARCH
+Research Assistant (part-time), Language Technologies Lab, IIIT Hyderabad (2024 - 2025)
+- Fine-tuned RoBERTa models for code-mixed Hindi-English sentiment analysis; co-author on a
+  workshop paper.
+- Wrote data cleaning scripts for a 200k-sentence annotated corpus.
+
+PROJECTS
+- Retrieval-augmented question answering over course notes: sentence-transformer embeddings,
+  FAISS vector index and an open-source LLM; demo hosted on Hugging Face Spaces.
+- Thesis: evaluated three transformer models on low-resource named entity recognition,
+  reporting precision, recall and F1 on held-out splits.
+
+SKILLS
+Python, PyTorch, Hugging Face Transformers, sentence-transformers, FAISS, spaCy, pandas,
+scikit-learn, Git, LaTeX
+
+EDUCATION
+MSc Computational Linguistics, IIIT Hyderabad, 2025
+B.Tech Information Technology, Pune University, 2023

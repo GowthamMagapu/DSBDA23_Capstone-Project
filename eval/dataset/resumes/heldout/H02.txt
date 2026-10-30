@@ -1,0 +1,25 @@
+Tomás Herrera
+Madrid, Spain | tomas.herrera@example.com
+
+SUMMARY
+Data and ML engineer, 4 years. Builds the pipelines that feed models and has shipped one
+NLP model to production; evaluation work so far has been basic.
+
+EXPERIENCE
+Data Engineer, Ventora Support Cloud (2022 - present)
+- Built Airflow and Spark pipelines that process 30M support tickets a month into a feature store.
+- Fine-tuned a DistilBERT ticket-routing classifier in PyTorch with Hugging Face Transformers
+  and deployed it behind a SageMaker endpoint; it now routes about 60% of incoming tickets.
+- Monitors endpoint latency and error rates in CloudWatch. Model quality is checked with a
+  monthly offline accuracy report; no online metrics or drift detection yet.
+- Wrote Terraform modules for the team's S3 buckets and Glue jobs.
+
+Junior Data Engineer, Banco Ribera (2021 - 2022)
+- Maintained SQL and Python ETL jobs feeding the finance data warehouse.
+
+SKILLS
+Python, PyTorch, Hugging Face Transformers, Airflow, Spark, SQL, AWS (S3, SageMaker, Glue,
+CloudWatch), Terraform (basic), Docker, Git
+
+EDUCATION
+BSc Computer Engineering, Universidad Politécnica de Madrid, 2021

@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import { analyzeApplication, keywordFallback, type ApplicationAnalysis } from '@/lib/application-analysis'
+import { analyzeApplication, keywordFallback, type ApplicationAnalysis, type PromptVersion } from '@/lib/application-analysis'
 
 // Wraps the production scorer with the three things an experiment needs and the app doesn't:
 // a request throttle (Gemini's free tier allows ~10 requests/minute), latency capture, and a
@@ -29,6 +29,9 @@ export type ScoreResult = ApplicationAnalysis & {
 //
 // The breaker below makes that failure loud instead of silent.
 const MAX_CONSECUTIVE_DEGRADED = Number(process.env.EVAL_MAX_DEGRADED ?? 3)
+
+/** Which screening prompt the `gemini` condition uses: v1 (original study) or v2 (rubric). */
+export const PROMPT_VERSION: PromptVersion = process.env.EVAL_PROMPT === 'v1' ? 'v1' : 'v2'
 
 let lastRequestAt = 0
 let apiCallCount = 0
@@ -153,10 +156,13 @@ export async function score(request: ScoreRequest): Promise<ScoreResult> {
     }
   }
 
-  // The model is part of the key: results are not interchangeable across models, and a run
-  // that switches model must not be served another model's cached scores.
+  // The model and prompt are part of the key: results are not interchangeable across either,
+  // and a run that switches one must not be served the other's cached scores. v1 keeps the
+  // key shape it had before prompts were versioned, so its existing cache entries still hit.
   const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
-  const key = cacheKey([model, jobTitle, requirements, resumeText, condition, trial])
+  const key = PROMPT_VERSION === 'v1'
+    ? cacheKey([model, jobTitle, requirements, resumeText, condition, trial])
+    : cacheKey([model, PROMPT_VERSION, jobTitle, requirements, resumeText, condition, trial])
   if (!noCache) {
     const hit = readCache(key)
     if (hit) return hit
@@ -166,7 +172,7 @@ export async function score(request: ScoreRequest): Promise<ScoreResult> {
   apiCallCount += 1
 
   const startedAt = performance.now()
-  const analysis = await analyzeApplication(resumeText, jobTitle, requirements)
+  const analysis = await analyzeApplication(resumeText, jobTitle, requirements, PROMPT_VERSION)
   const latencyMs = performance.now() - startedAt
 
   // `analyzeApplication` swallows AI errors and returns keyword scores with an empty summary.

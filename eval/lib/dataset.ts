@@ -3,9 +3,11 @@ import { join, extname, basename } from 'path'
 import { extractResumeText } from '@/lib/resume-text'
 import type { Label } from './metrics'
 
-// Loads the two-tier dataset. The synthetic tier carries ground-truth labels and drives the
-// accuracy experiment; the real tier is one candidate's own resume in several tailorings,
-// which supports robustness measurements but cannot support an accuracy claim.
+// Loads the dataset. The synthetic tier carries ground-truth labels and drives the accuracy
+// experiment; the held-out tier was written and labelled before the v2 prompt was tuned against
+// the synthetic tier's errors, so it measures whether that tuning generalises; the real tier is
+// one candidate's own resume in several tailorings, which supports robustness measurements but
+// cannot support an accuracy claim.
 
 const DATASET_DIR = join(process.cwd(), 'eval', 'dataset')
 
@@ -40,14 +42,14 @@ export function loadJobs(): Job[] {
  * Minimal CSV reader for our own fixed-shape label file. Notes are the last column and may
  * contain no commas — enforced here rather than pulling in a CSV dependency.
  */
-export function loadLabels(): LabelledPair[] {
-  const raw = readFileSync(join(DATASET_DIR, 'labels.csv'), 'utf8').trim()
+export function loadLabels(file = 'labels.csv'): LabelledPair[] {
+  const raw = readFileSync(join(DATASET_DIR, file), 'utf8').trim()
   const [, ...rows] = raw.split(/\r?\n/)
 
   return rows.map((row, index) => {
     const columns = row.split(',')
     if (columns.length < 5) {
-      throw new Error(`labels.csv row ${index + 2} has ${columns.length} columns, expected 5`)
+      throw new Error(`${file} row ${index + 2} has ${columns.length} columns, expected 5`)
     }
     const [jobId, resumeId, humanLabel, humanFit, ...note] = columns
     return {
@@ -61,7 +63,7 @@ export function loadLabels(): LabelledPair[] {
 }
 
 /** Reads every resume in a tier, running the app's own extractor so the parse path is exercised. */
-export async function loadResumes(tier: 'synthetic' | 'real'): Promise<Resume[]> {
+export async function loadResumes(tier: 'synthetic' | 'heldout' | 'real'): Promise<Resume[]> {
   const dir = join(DATASET_DIR, 'resumes', tier)
   if (!existsSync(dir)) return []
 

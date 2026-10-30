@@ -1,0 +1,23 @@
+Aisha Bello
+Lagos, Nigeria | aisha.bello@example.com
+
+SUMMARY
+Junior full-stack developer, 18 months at a digital agency. Builds React frontends and
+simple Node.js APIs for client projects.
+
+EXPERIENCE
+Junior Full-Stack Developer, Brightwave Agency (2024 - present)
+- Build client web apps with React and TypeScript from Figma designs, using Tailwind CSS.
+- Write CRUD endpoints in Node.js and Express backed by PostgreSQL through Prisma.
+- Added login with an auth library to two client projects.
+- Write some component tests with Vitest; the agency has no dedicated QA.
+
+PROJECTS
+- Event ticketing app: React, TypeScript and Express, deployed on Render.
+
+SKILLS
+React, TypeScript, JavaScript, Tailwind CSS, Node.js, Express, PostgreSQL, Prisma,
+Vitest, Git, REST APIs
+
+EDUCATION
+BSc Computer Science, University of Lagos, 2023
