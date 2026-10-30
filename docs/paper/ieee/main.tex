@@ -67,7 +67,11 @@ while yielding almost no text, silently starving the scorer of input. We also
 report a methodological hazard encountered during the study itself: the system's
 own silent fallback corrupted our first measurement run, motivating a circuit
 breaker that refuses to emit a report when the model under test has stopped
-responding.
+responding. Finally, we evaluate a revised prompt that states the decision
+rubric, asks for per-requirement evidence and fences resume text as untrusted
+input. On a held-out set written before the revision was run, it raised
+accuracy from 87.5 to 91.7 percent and kappa from 0.695 to 0.781, and it blocked
+all ten injection attempts.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -128,6 +132,10 @@ responding. The harness now trips a breaker and refuses to emit a partial report
 resume screening, including a confirmed prompt-injection vulnerability that
 changes hiring decisions, sensitivity of scores to resume presentation rather
 than substance, and silent upstream extraction failure (Section~\ref{sec:results}).
+\item \textbf{A prompt intervention evaluated on held-out data.} Stating the
+decision rubric, requiring evidence before a score and fencing untrusted input
+raised held-out accuracy from 87.5 to 91.7 percent and blocked every injection
+attack we tested (Section~\ref{sec:v2}).
 \end{enumerate}
 
 \subsection{Scope}
@@ -379,7 +387,11 @@ characters.
 
 The analysis function sends this text together with the job title and
 requirements to the language model under a system instruction demanding strict
-JSON, and maps the returned score to a decision band: at least 70 is
+JSON, and maps the returned score to a decision band. The production system
+instruction is prompt v2, which states the scoring rubric, asks for
+per-requirement evidence and fences the resume as untrusted text
+(Section~\ref{sec:v2}); Sections~\ref{sec:results} to~\ref{sec:silent} measure
+the original prompt, v1, which asked only for a score from 0 to 100. At least 70 is
 \texttt{selected}, at least 40 is \texttt{review}, and anything lower is
 \texttt{rejected}. The intermediate \texttt{review} band is deliberate: it
 routes uncertain cases to a human rather than resolving them automatically.
@@ -434,9 +446,19 @@ is made. What it supports is a consistency claim: all seven describe the same
 person, education and projects, so a screener should score them similarly for a
 given role.
 
+\textbf{Held-out tier.} Six further authored resumes against the same four job
+specifications give 24 labelled pairs (19 \texttt{rejected}, 3 \texttt{review},
+2 \texttt{selected}), written and labelled under the same rules as the synthetic
+tier \textit{before} the revised prompt of Section~\ref{sec:v2} was run. This
+tier measures whether a prompt change made after studying the synthetic tier's
+errors generalises beyond them.
+
 \subsection{Conditions}
 
-Three conditions were compared, as listed in Table~\ref{tab:conditions}.
+Three conditions were compared, as listed in Table~\ref{tab:conditions}. Every
+\texttt{gemini} result in Sections~\ref{sec:results} to~\ref{sec:silent} uses
+screening prompt v1; Section~\ref{sec:v2} compares v1 with the revised prompt v2
+on both labelled tiers.
 
 \begin{table}[!t]
 \caption{Experimental Conditions}
@@ -718,8 +740,8 @@ impersonating a system turn succeeded on both bases. The model appears to
 discriminate by \textit{form} rather than by \textit{provenance}: it resists
 text that reads like a candidate making a request, and complies with text that
 reads like an instruction from the operator. Any candidate who places that
-sentence in white-on-white text inside their document is shortlisted. This is
-live and unmitigated.
+sentence in white-on-white text inside their document is shortlisted under v1.
+Section~\ref{sec:v2} measures a mitigation.
 
 \subsection{Extraction Reliability and Latency}
 \label{sec:extraction}
@@ -797,6 +819,93 @@ demonstration silently degrades to keyword matching after 20 requests,
 presenting keyword scores to a recruiter as language model evaluations with no
 visible signal.
 
+\subsection{Intervention: A Rubric Prompt}
+\label{sec:v2}
+
+The errors in Section~\ref{sec:results} share a cause visible in the prompt
+itself. Prompt v1 asks for an ``overall match strength'' from 0 to 100 but never
+says what the 40 and 70 cutoffs mean, so partial matches drift to about 45 and
+land in \texttt{review}: seven of the nine errors, including all four
+keyword-stuffer pairs, were rejected candidates scored between 45 and 52. We
+therefore wrote a second prompt, v2, with three changes.
+
+\begin{enumerate}
+\item \textbf{A rubric aligned to the bands.} A score of 70 to 100 meets every
+core requirement, including any stated minimum years; 40 to 69 has one
+significant gap; 0 to 39 lacks several core requirements or any professional
+experience in the role's area. Two explicit caps apply: no professional
+experience in the area scores at most 39, and fewer than the stated minimum years
+at most 69. A skill counts only when the resume shows it used in professional
+work.
+\item \textbf{Evidence before the score.} The model lists each core requirement
+with a short piece of evidence and a met, partial or missing verdict, then gives
+the score.
+\item \textbf{Untrusted-input fencing.} The resume is wrapped in explicit
+delimiters, which are stripped from the candidate's text so a resume cannot close
+its own block, and the model is told to ignore any instruction inside them.
+\end{enumerate}
+
+Because v2 was written after studying the synthetic tier's errors, its score on
+that tier is optimistic. We therefore wrote the held-out tier before running v2
+and report both prompts on it, using the same model and temperature, run on
+30~October~2026. Table~\ref{tab:v2} gives the results.
+
+\begin{table}[!t]
+\caption{Prompt v1 Against v2}
+\label{tab:v2}
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Condition} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{$\kappa$} & \textbf{$\rho$} \\
+\hline
+\multicolumn{5}{|l|}{\textit{Held-out tier, 24 pairs}} \\
+\hline
+\texttt{gemini} v1 & 87.5\,\% & 0.759 & 0.695 & 0.845 \\
+\hline
+\texttt{gemini} v2 & \textbf{91.7\,\%} & \textbf{0.813} & \textbf{0.781} & \textbf{0.910} \\
+\hline
+\texttt{keyword} & 83.3\,\% & 0.428 & 0.429 & 0.802 \\
+\hline
+\texttt{majority} & 79.2\,\% & 0.295 & 0.000 & 0.000 \\
+\hline
+\multicolumn{5}{|l|}{\textit{Synthetic tier, 48 pairs (v2 revised against these errors)}} \\
+\hline
+\texttt{gemini} v1 & 81.3\,\% & 0.740 & 0.623 & 0.915 \\
+\hline
+\texttt{gemini} v2 & 100.0\,\% & 1.000 & 1.000 & 0.882 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+On held-out data v2 makes two errors against v1's three, and it removes v1's only
+two-band error: H05, a natural language processing graduate with academic
+projects but no industry role, scored 75 and was shortlisted under v1, and is
+rejected under v2. Both remaining errors are one-band over-promotions: H03 on J2
+scored 55 against a human \texttt{rejected}, and H02 on J3 scored 75 against
+\texttt{review}. With 24 pairs a single decision moves accuracy by 4.2 points, so
+the held-out improvement is directional rather than conclusive.
+
+On the synthetic tier v2 classifies all 48 pairs correctly, including the keyword
+stuffer R06, scored 0 in all four roles against 45 under v1, and the
+vocabulary-mismatch case R07, scored 50 and routed to \texttt{review} as the human
+label says. This is the expected effect of fixing the errors that motivated the
+rubric and is not evidence of generalisation; the held-out figure is the honest
+estimate. Rank correlation falls slightly, from 0.915 to 0.882, because v2 scores
+most clear rejections at 0, discarding the ordering among them that v1 retained.
+
+Re-running the injection experiment under v2, with the same five attacks on the
+same two bases, gives a success rate of 0 of 10 against 2 of 10 under v1, and a
+mean score delta of 2.0 (SD 4.2) against 11.4 (SD 30.4). The forged system turn
+that moved R09 from 0 to 95 now leaves it at 0. Two attacks still raised R08 from
+55 to 65, below the 20-point success threshold and without changing the
+decision, so fencing reduces the model's responsiveness to injected text but does
+not remove it.
+
+Production now uses v2. Prompt v1 remains selectable in the harness, so every
+earlier result stays reproducible. The determinism and presentation-sensitivity
+experiments were not re-run under v2.
+
 \section{Discussion}
 
 \textbf{The evaluation is the contribution as much as the system is.} The
@@ -813,8 +922,15 @@ rejected candidates a human wanted. Systems that make consequential decisions
 about people should be designed so their errors land on the recoverable side,
 and an explicit route-to-a-human band is a cheap way to obtain that.
 
+\textbf{Stating the decision rule is cheap and effective.} Most of v1's errors
+came from a prompt that asked for a score without saying what the score would be
+used for. Writing the labelling policy into the prompt improved every agreement
+metric on held-out data at no engineering cost. A screener's thresholds and its
+instructions should be designed together, not separately.
+
 \textbf{Presentation sensitivity may be the most consequential finding.}
-Injection requires a deliberate attacker and is fixable with known techniques.
+Injection requires a deliberate attacker, and Section~\ref{sec:v2} shows a known
+technique, delimiting untrusted input, blocked every attack we tried.
 Format sensitivity affects every honest candidate: the same person gets
 different outcomes depending on which tailoring of their resume they submit.
 This rewards candidates who can afford to optimise presentation, and is not
@@ -887,7 +1003,18 @@ may change beneath a fixed version string. The run date and model identifier are
 recorded in every report.
 \item \textbf{Small adversarial set.} Five attack patterns on two bases. A
 20\,\% success rate on this set establishes that the vulnerability is real, not
-its prevalence under a broader attack surface.
+its prevalence under a broader attack surface. Likewise, v2's 0 of 10 shows the
+mitigation works against these attacks, not against an adaptive attacker.
+\item \textbf{Prompt revised against the test set.} Prompt v2 was written after
+inspecting the synthetic tier's errors, so its perfect score there is not a
+generalisation estimate. The held-out tier mitigates this, but its resumes and
+labels were written by the same authors who wrote the rubric, so it shares their
+notion of fit, and with 24 pairs and five minority-class instances it is smaller
+still.
+\item \textbf{Latency is not comparable across runs.} Median uncached latency
+ranged from 2.3 to 6.9 seconds between runs on the same day, so we make no
+latency claim for v2. Its longer output may lengthen the applicant's wait on the
+application path.
 \end{itemize}
 
 \section{Future Work}
@@ -895,11 +1022,10 @@ its prevalence under a broader attack surface.
 Ordered by what the results indicate is most urgent.
 
 \begin{enumerate}
-\item \textbf{Mitigate prompt injection.} Delimit resume text explicitly as
-untrusted data, instruct the model that text inside the delimiters is never an
-instruction, strip instruction-like patterns before scoring, or score from
-extracted structured fields rather than raw text. Re-run the injection
-experiment to measure the mitigation rather than asserting it.
+\item \textbf{Broaden injection testing.} Prompt v2's fencing blocked all ten
+attacks but still let two of them move a score by 10 points. Test a larger and
+adaptive attack set, hidden-text variants inside real documents, and scoring
+from extracted structured fields rather than raw text.
 \item \textbf{Make degradation visible.} Record fallback scoring as a
 warning-level event and surface it in the feed and the recruiter email, so a
 keyword-scored application is never presented as a language model evaluation.
@@ -914,7 +1040,8 @@ structured fields before scoring, or averaging across several prompt framings,
 narrows the spread.
 \item \textbf{Strengthen the evaluation.} Add a second annotator with an
 inter-annotator agreement statistic, real anonymised resumes, a larger and more
-balanced label set, and comparison across models.
+balanced label set, comparison across models, and the determinism and
+presentation-sensitivity experiments re-run under prompt v2.
 \item \textbf{Engineering.} Replace the in-memory rate limiter with a shared
 store for multi-instance deployment, move resume binary objects out of the
 database to object storage, and normalise the columns that currently hold JSON
@@ -939,6 +1066,12 @@ rewordings of identical facts, it is exploitable by a one-line prompt injection
 that changes hiring outcomes, and it silently scores scanned resumes as empty.
 Additionally, the fallback that makes the system resilient makes it opaque, a
 property that corrupted our own first measurement run before it was detected.
+
+A revised prompt addresses part of this. On held-out pairs written before it was
+run, v2 raised accuracy from 87.5 to 91.7 percent and kappa from 0.695 to 0.781,
+removed the only two-band error, and blocked all ten injection attempts.
+Presentation sensitivity, silent extraction failure and silent degradation
+remain open.
 
 For systems that make consequential decisions about people, we argue that
 characterising failure modes is not an appendix to the evaluation but the
