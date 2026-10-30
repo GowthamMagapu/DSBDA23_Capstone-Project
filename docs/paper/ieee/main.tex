@@ -139,6 +139,26 @@ Limitations are stated in full in Section~\ref{sec:ethics}.
 
 \section{Related Work}
 
+\textbf{Language model resume screening.} Lo \textit{et al.}~\cite{b10} propose a
+four-agent framework (resume extractor, evaluator, summarizer and score
+formatter) built on CrewAI and LangChain, in which retrieval-augmented
+generation supplies the evaluator with external criteria such as job
+requirements, certifications and university rankings. On 105 anonymised
+human-resources resumes they compare GPT-4o and DeepSeek-V3 scores against
+ratings from HR professionals, reporting a Pearson correlation of 0.84 on the
+top and bottom 10\% of candidates and a mean absolute error of 0.90 for the
+retrieval-augmented configuration. AgentU follows the same evaluation logic,
+agreement with human judgement rather than raw accuracy, but departs from it in
+two ways. Its screening step is deliberately a single model call with a
+deterministic fallback, so that determinism and injection effects can be
+attributed to one component; its agentic behaviour lies in workflow
+orchestration (Section~\ref{sec:eventsourcing}) rather than in scoring. And Lo
+\textit{et al.} evaluate an offline pipeline without testing determinism,
+presentation sensitivity, adversarial input or extraction failure, which are
+the subject of Section~\ref{sec:results}. Filatova \textit{et al.}~\cite{b11}
+describe a modular multi-agent hiring assistant with a human-review interface,
+benchmarked against recruiters on 64 applicants for a backend engineering role.
+
 \textbf{Algorithmic hiring and its risks.} The best-known cautionary case is
 Amazon's internal recruiting tool, abandoned after it was found to disadvantage
 women, reported by Dastin~\cite{b1}. Bogen and Rieke~\cite{b2} survey where bias
@@ -155,7 +175,10 @@ high-risk. Both are directly relevant to a system of this shape.
 form of the attack. Greshake \textit{et al.}~\cite{b5} describe the indirect
 form, which is exactly our threat model: the attack arrives inside a document
 the application ingests. The OWASP Top 10 for Large Language Model
-Applications~\cite{b6} lists prompt injection as LLM01.
+Applications~\cite{b6} lists prompt injection as LLM01. Baxi \textit{et
+al.}~\cite{b12} study the attack in r\'esum\'e screening specifically, finding
+that injected self-promotion improves rankings most when few candidates use it
+and candidates are of similar quality.
 
 \textbf{Agreement metrics.} Cohen~\cite{b7} corrects observed agreement for
 agreement expected by chance, which Section~\ref{sec:metrics} argues is
@@ -166,7 +189,8 @@ accuracy-style metrics on curated datasets. We found comparatively little that
 reports, for one deployed system, the combination of screening quality,
 determinism, presentation sensitivity, adversarial robustness and upstream
 extraction reliability, and that measures the production code path rather than
-an idealised one.
+an idealised one. The closest system, Lo \textit{et al.}~\cite{b10}, reports
+agreement with HR ratings but no robustness measurements.
 
 \section{System Overview}
 
@@ -941,6 +965,9 @@ this work.
 \bibitem{b7} J. Cohen, ``A coefficient of agreement for nominal scales,'' \textit{Educational and Psychological Measurement}, vol. 20, no. 1, pp. 37--46, 1960.
 \bibitem{b8} New York City Local Law 144 of 2021, Automated Employment Decision Tools, 2021.
 \bibitem{b9} Regulation (EU) 2024/1689 of the European Parliament and of the Council, Artificial Intelligence Act, 2024.
+\bibitem{b10} F. P.-W. Lo, J. Qiu, Z. Wang, H. Yu, Y. Chen, G. Zhang, and B. Lo, ``AI hiring with LLMs: A context-aware and explainable multi-agent framework for resume screening,'' in \textit{Proc. IEEE/CVF Conf. Computer Vision and Pattern Recognition Workshops (CVPRW)}, 2025, arXiv:2504.02870.
+\bibitem{b11} V. Filatova, A. Zelenchuk, and D. Filatov, ``AI-driven decision-making system for hiring process,'' arXiv:2512.20652, 2025.
+\bibitem{b12} P. Baxi, J. Xu, J. Y. Jiang, and S. Jasin, ``Prompt injection in automated r\'esum\'e screening with large language models: Single and multi-injection settings,'' in \textit{Findings of the Association for Computational Linguistics: ACL 2026}, 2026, arXiv:2606.27287.
 \end{thebibliography}
 
 \end{document}

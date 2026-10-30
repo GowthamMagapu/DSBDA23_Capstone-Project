@@ -107,6 +107,21 @@ claims; they are not a benchmark. Limitations are stated in full in §9.
 > `[TODO]` Expand each paragraph to 3–5 sentences with specifics once you have read the sources.
 > Every citation below is marked `[VERIFY]` — confirm authors, venue and year before submission.
 
+**LLM resume screening (base paper).** Lo et al. [10] propose a four-agent framework (resume
+extractor, evaluator, summarizer and score formatter) built on CrewAI and LangChain, in which
+retrieval-augmented generation supplies the evaluator with external criteria such as job
+requirements, certifications and university rankings. On 105 anonymised HR-role resumes they
+compare GPT-4o and DeepSeek-V3 scores against ratings from HR professionals, reporting a Pearson
+correlation of 0.84 on the top and bottom 10% of candidates and an MAE of 0.90 for the
+RAG configuration. AgentU follows the same evaluation logic — agreement with human judgement
+rather than raw accuracy — but departs from it in two ways. Its screening step is deliberately a
+single model call with a deterministic fallback, so that determinism and injection effects can be
+attributed to one component; its agentic behaviour lies in workflow orchestration (§4.2) rather
+than in scoring. And Lo et al. evaluate an offline pipeline without testing determinism,
+presentation sensitivity, adversarial input or extraction failure, which are the subject of §7.
+Filatova et al. [11] describe a modular multi-agent hiring assistant with a human-review
+interface, benchmarked against recruiters on 64 applicants for a backend engineering role.
+
 **Algorithmic hiring and its risks.** The best-known cautionary case is Amazon's internal
 recruiting tool, abandoned after it was found to disadvantage women, reported by Dastin for
 Reuters (2018) `[VERIFY]`. Bogen and Rieke's *Help Wanted: An Examination of Hiring Algorithms,
@@ -124,7 +139,9 @@ Models* (2022) `[VERIFY]` introduced the direct form. Greshake et al., *Not What
 For: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection* (2023)
 `[VERIFY]` describes the indirect form, which is exactly our threat model: the attack arrives
 inside a document the application ingests. The OWASP Top 10 for LLM Applications `[VERIFY]`
-lists prompt injection as LLM01.
+lists prompt injection as LLM01. Baxi et al. [12] study the attack in résumé screening specifically,
+finding that injected self-promotion improves rankings most when few candidates use it and
+candidates are of similar quality.
 
 **Agreement metrics.** Cohen's κ (Cohen, 1960) `[VERIFY]` corrects observed agreement for
 agreement expected by chance, which §6.4 argues is essential under our class imbalance.
@@ -133,7 +150,8 @@ agreement expected by chance, which §6.4 argues is essential under our class im
 datasets. We found comparatively little that reports, for one deployed system, the combination
 of screening quality, determinism, presentation sensitivity, adversarial robustness and upstream
 extraction reliability — and that measures the production code path rather than an idealised
-one. `[TODO: soften or strengthen this claim after your literature search; do not overclaim.]`
+one. The closest system, Lo et al. [10], reports agreement with HR ratings but no robustness
+measurements. `[TODO: soften or strengthen this claim after your literature search; do not overclaim.]`
 
 ---
 
@@ -655,7 +673,10 @@ modes is not an appendix to the evaluation but the substance of it.
 7. J. Cohen, "A Coefficient of Agreement for Nominal Scales," *Educational and Psychological Measurement*, 1960. `[VERIFY]`
 8. New York City Local Law 144 of 2021, Automated Employment Decision Tools. `[VERIFY]`
 9. Regulation (EU) 2024/1689, Artificial Intelligence Act. `[VERIFY]`
-10. `[TODO]` 5–10 further references from your literature search on LLM-based resume screening.
+10. F. P.-W. Lo, J. Qiu, Z. Wang, H. Yu, Y. Chen, G. Zhang, and B. Lo, "AI Hiring with LLMs: A Context-Aware and Explainable Multi-Agent Framework for Resume Screening," in *Proc. IEEE/CVF Conf. Computer Vision and Pattern Recognition Workshops (CVPRW)*, 2025. arXiv:2504.02870. **Base paper.** `[VERIFY page numbers]`
+11. V. Filatova, A. Zelenchuk, and D. Filatov, "AI-Driven Decision-Making System for Hiring Process," arXiv:2512.20652, 2025.
+12. P. Baxi, J. Xu, J. Y. Jiang, and S. Jasin, "Prompt Injection in Automated Résumé Screening with Large Language Models: Single and Multi-Injection Settings," in *Findings of the Association for Computational Linguistics: ACL 2026*, 2026. arXiv:2606.27287. `[VERIFY page numbers]`
+13. `[TODO]` Further references from your literature search on LLM-based resume screening.
 
 ---
 
