@@ -2,6 +2,9 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Resume PDF parsing loads these with runtime requires the bundler cannot trace, so they must
+  // ship as plain node_modules rather than be bundled into the route (see src/lib/resume-text.ts).
+  serverExternalPackages: ['pdf-parse', 'pdfjs-dist', '@napi-rs/canvas'],
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
