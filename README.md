@@ -54,6 +54,14 @@ TELEGRAM_CHAT_ID="@your_channel"
 
 `/sitemap.xml` lists every published role and `/robots.txt` points crawlers to it.
 
+Google for Jobs requires a country on every posting. The careers page takes it from the company
+location when that names one ("Hyderabad, Telangana, India", "Remote (India)"); otherwise it uses
+`JOB_DEFAULT_COUNTRY`, an ISO country code that defaults to `IN`:
+
+```bash
+JOB_DEFAULT_COUNTRY="IN"
+```
+
 ## Email updates setup
 
 Recruiter notifications are sent over SMTP:

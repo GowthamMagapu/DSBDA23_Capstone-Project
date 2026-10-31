@@ -39,6 +39,7 @@ export default async function CareersPage({ params }: Props) {
         url: buildPublicJobUrl(job.slug),
         datePosted: job.createdAt,
         company,
+        defaultCountry: process.env.JOB_DEFAULT_COUNTRY,
       })
     : null
 

@@ -68,15 +68,31 @@ describe('buildJobPostingJsonLd — Google for Jobs structured data', () => {
     assert.equal(data.description, '<p>About Acme</p><p>We build &lt;fast&gt; tools &amp; more.<br>Line two.</p>')
   })
 
-  test('marks remote roles as TELECOMMUTE instead of giving an address', () => {
+  test('gives a city-only location the default country, which Google requires', () => {
+    const data = buildJobPostingJsonLd({ ...baseJob, company: { ...baseJob.company, location: 'Hyderabad' } })
+    assert.deepEqual(data.jobLocation?.address, { '@type': 'PostalAddress', addressLocality: 'Hyderabad', addressCountry: 'IN' })
+  })
+
+  test('uses a configured default country instead of IN', () => {
+    const data = buildJobPostingJsonLd({ ...baseJob, company: { ...baseJob.company, location: 'Austin' }, defaultCountry: 'US' })
+    assert.equal(data.jobLocation?.address.addressCountry, 'US')
+  })
+
+  test('marks remote roles as TELECOMMUTE with the country applicants must be in', () => {
     const data = buildJobPostingJsonLd({ ...baseJob, company: { ...baseJob.company, location: 'Remote (India)' } })
     assert.equal(data.jobLocationType, 'TELECOMMUTE')
+    assert.deepEqual(data.applicantLocationRequirements, { '@type': 'Country', name: 'India' })
     assert.equal('jobLocation' in data, false)
   })
 
-  test('omits location and website when the company has none', () => {
+  test('falls back to the default country for a plain "Remote" location', () => {
+    const data = buildJobPostingJsonLd({ ...baseJob, company: { ...baseJob.company, location: 'Remote' } })
+    assert.deepEqual(data.applicantLocationRequirements, { '@type': 'Country', name: 'IN' })
+  })
+
+  test('still names a country, and omits the website, when the company has neither location nor site', () => {
     const data = buildJobPostingJsonLd({ ...baseJob, company: { name: 'Acme', website: null, location: null } })
-    assert.equal('jobLocation' in data, false)
+    assert.deepEqual(data.jobLocation, { '@type': 'Place', address: { '@type': 'PostalAddress', addressCountry: 'IN' } })
     assert.equal('sameAs' in data.hiringOrganization, false)
   })
 })

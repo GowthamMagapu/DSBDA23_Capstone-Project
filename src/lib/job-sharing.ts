@@ -4,6 +4,13 @@
 const LINKEDIN_SHARE_URL = 'https://www.linkedin.com/sharing/share-offsite/'
 const LISTING_VALID_DAYS = 60
 
+/**
+ * Google for Jobs rejects a JobPosting without a country, but recruiters often type only a
+ * city ("Hyderabad"). This is the country assumed when the company location names none;
+ * the careers page lets JOB_DEFAULT_COUNTRY override it.
+ */
+export const DEFAULT_JOB_COUNTRY = 'IN'
+
 export function createJobAnnouncementText(input: {
   title: string
   companyName: string
@@ -58,11 +65,27 @@ export function buildJobPostingJsonLd(input: {
   url: string
   datePosted: Date
   company: { name: string; website: string | null; location: string | null }
+  /** Country used when the location names none; defaults to DEFAULT_JOB_COUNTRY. */
+  defaultCountry?: string
 }) {
   const validThrough = new Date(input.datePosted.getTime() + LISTING_VALID_DAYS * 24 * 60 * 60 * 1000)
   const location = input.company.location?.trim() || null
   const isRemote = Boolean(location && /\bremote\b/i.test(location))
   const website = normalizeWebsite(input.company.website)
+  const defaultCountry = input.defaultCountry?.trim() || DEFAULT_JOB_COUNTRY
+
+  // Google requires a country on every posting: on the address of an on-site role, or as the
+  // applicant location requirement of a fully remote one.
+  const place: {
+    jobLocationType?: 'TELECOMMUTE'
+    applicantLocationRequirements?: { '@type': 'Country'; name: string }
+    jobLocation?: { '@type': 'Place'; address: Record<string, string> }
+  } = isRemote
+    ? {
+        jobLocationType: 'TELECOMMUTE',
+        applicantLocationRequirements: { '@type': 'Country', name: remoteCountry(location!, defaultCountry) },
+      }
+    : { jobLocation: { '@type': 'Place', address: toPostalAddress(location, defaultCountry) } }
 
   return {
     '@context': 'https://schema.org/',
@@ -78,8 +101,7 @@ export function buildJobPostingJsonLd(input: {
       name: input.company.name,
       ...(website ? { sameAs: website } : {}),
     },
-    ...(isRemote ? { jobLocationType: 'TELECOMMUTE' } : {}),
-    ...(location && !isRemote ? { jobLocation: { '@type': 'Place', address: toPostalAddress(location) } } : {}),
+    ...place,
   }
 }
 
@@ -89,12 +111,25 @@ export function serializeJsonLd(data: unknown) {
 }
 
 // "Hyderabad, Telangana, India" → locality "Hyderabad", region "Telangana", country "India".
-function toPostalAddress(location: string) {
-  const parts = location.split(',').map((part) => part.trim()).filter(Boolean)
-  const address: Record<string, string> = { '@type': 'PostalAddress', addressLocality: parts[0] ?? location }
+// "Hyderabad" → locality "Hyderabad" in the default country; no location → the country alone.
+function toPostalAddress(location: string | null, defaultCountry: string) {
+  const parts = (location ?? '').split(',').map((part) => part.trim()).filter(Boolean)
+  const address: Record<string, string> = { '@type': 'PostalAddress' }
+  if (parts.length >= 1) address.addressLocality = parts[0]
   if (parts.length >= 3) address.addressRegion = parts[1]
-  if (parts.length >= 2) address.addressCountry = parts[parts.length - 1]
+  address.addressCountry = parts.length >= 2 ? parts[parts.length - 1] : defaultCountry
   return address
+}
+
+// "Remote (India)" or "Remote - Hyderabad, India" → "India"; plain "Remote" → the default.
+function remoteCountry(location: string, defaultCountry: string) {
+  const rest = location
+    .replace(/\bremote\b/gi, ' ')
+    .replace(/[()\-–—/|]/g, ' ')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+  return rest[rest.length - 1] ?? defaultCountry
 }
 
 function toHtmlParagraphs(text: string) {
