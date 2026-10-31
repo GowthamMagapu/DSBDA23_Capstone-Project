@@ -6,6 +6,8 @@ export type ApplicationAnalysis = {
   aiSummary: string
   matchedSkills: string[]
   missingSkills: string[]
+  /** Set when the AI call failed and the keyword fallback produced the score: why it failed. */
+  fallbackReason?: string
 }
 
 // v1 is the prompt the original evaluation measured (eval/results/e1-accuracy.*). It asks for a
@@ -92,8 +94,21 @@ export async function analyzeApplication(
       matchedSkills: (result.matchedSkills || []).slice(0, 12).map(String),
       missingSkills: (result.missingSkills || []).slice(0, 12).map(String),
     }
-  } catch {
-    return { ...keywordFallback(resumeText, requirements), aiSummary: '', matchedSkills: [], missingSkills: [] }
+  } catch (error) {
+    // The fallback keeps screening available, but a silent one hides why the AI never ran,
+    // so the reason is logged and returned for the caller to surface. The request URL carries
+    // the API key, so it is redacted in case an error message ever echoes it.
+    const fallbackReason = (error instanceof Error ? error.message : String(error))
+      .replace(/key=[^&\s"']+/g, 'key=[redacted]')
+      .slice(0, 300)
+    console.error(`AI screening failed, so keyword scoring was used instead: ${fallbackReason}`)
+    return {
+      ...keywordFallback(resumeText, requirements),
+      aiSummary: '',
+      matchedSkills: [],
+      missingSkills: [],
+      fallbackReason,
+    }
   }
 }
 

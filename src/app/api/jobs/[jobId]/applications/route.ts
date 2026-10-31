@@ -139,6 +139,15 @@ export async function POST(
     level: analysis.status === 'selected' ? 'success' : 'info',
     message: `New applicant for "${job.title}": ${parsed.data.candidateName} scored ${analysis.score}% (${analysis.status}).`,
   })
+  if (analysis.fallbackReason) {
+    await logAgentEvent({
+      ownerId: job.ownerId,
+      jobId: job.id,
+      type: 'application.ai_unavailable',
+      level: 'warning',
+      message: `AI screening was unavailable for ${parsed.data.candidateName}, so the score comes from keyword matching. Reason: ${analysis.fallbackReason}`,
+    })
+  }
   after(() =>
     notifyNewApplication({
       ownerId: job.ownerId,

@@ -125,6 +125,7 @@ export async function POST(request: NextRequest) {
 
       await logAgentEvent({ ownerId, jobId: job.id, type: 'pool.scoring', message: `Scoring ${profiles.length} existing candidate${profiles.length === 1 ? '' : 's'} against "${job.title}"…` })
       const scored: { name: string; score: number; status: string }[] = []
+      const fallbackReasons: string[] = []
       await runWithConcurrency(profiles, AUTO_APPLY_CONCURRENCY, async (profile) => {
         const analysis = await analyzeApplication(profile.resumeText, job.title, job.requirements)
         await prisma.application.create({
@@ -147,7 +148,17 @@ export async function POST(request: NextRequest) {
           },
         })
         scored.push({ name: profile.name, score: analysis.score, status: analysis.status })
+        if (analysis.fallbackReason) fallbackReasons.push(analysis.fallbackReason)
       })
+      if (fallbackReasons.length > 0) {
+        await logAgentEvent({
+          ownerId,
+          jobId: job.id,
+          type: 'pool.ai_unavailable',
+          level: 'warning',
+          message: `AI screening was unavailable for ${fallbackReasons.length} of ${profiles.length} existing candidates, so their scores come from keyword matching. Reason: ${fallbackReasons[0]}`,
+        })
+      }
       await logAgentEvent({ ownerId, jobId: job.id, type: 'pool.scored', level: 'success', message: `Scored ${scored.length} existing candidate${scored.length === 1 ? '' : 's'} for "${job.title}".` })
       await notifyCandidatePoolScored({ ownerId, jobId: job.id, jobTitle: job.title, scored })
     } catch (error) {

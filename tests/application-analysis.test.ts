@@ -61,6 +61,31 @@ describe('analyzeApplication — screening prompt', () => {
     )
   })
 
+  test('reports why it fell back when the model call fails', async () => {
+    process.env.GEMINI_API_KEY = 'test-key'
+    globalThis.fetch = (async () =>
+      Response.json({ error: { message: 'Quota exceeded' } }, { status: 429 })) as typeof fetch
+    const result = await analyzeApplication('React engineer.', 'Frontend Engineer', 'React')
+    assert.equal(result.aiSummary, '')
+    assert.match(result.fallbackReason ?? '', /429/)
+  })
+
+  test('redacts the API key if a failure message echoes the request URL', async () => {
+    process.env.GEMINI_API_KEY = 'test-key'
+    globalThis.fetch = (async () => {
+      throw new Error('request to https://example.test/model?key=secret-123 failed')
+    }) as typeof fetch
+    const result = await analyzeApplication('React engineer.', 'Frontend Engineer', 'React')
+    assert.doesNotMatch(result.fallbackReason ?? '', /secret-123/)
+    assert.match(result.fallbackReason ?? '', /key=\[redacted\]/)
+  })
+
+  test('sets no fallback reason when the model answers', async () => {
+    mockGemini(reply)
+    const result = await analyzeApplication('React engineer.', 'Frontend Engineer', 'React')
+    assert.equal(result.fallbackReason, undefined)
+  })
+
   test('clamps the model score to 0-100 before choosing a band', async () => {
     mockGemini({ ...reply, score: 140 })
     const result = await analyzeApplication('React engineer.', 'Frontend Engineer', 'React')
