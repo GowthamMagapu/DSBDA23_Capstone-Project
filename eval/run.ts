@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, existsSync } from 'fs'
 import { join, extname } from 'path'
 import { extractResumeText } from '@/lib/resume-text'
 import { loadJobs, loadLabels, loadResumes, type Job, type Resume } from './lib/dataset'
-import { score, preflight, apiCallsUsed, DegradationError, type Condition } from './lib/runner'
+import { score, preflight, apiCallsUsed, DegradationError, PROMPT_VERSION, type Condition } from './lib/runner'
 import {
   LABELS, accuracy, classMetrics, cohensKappa, confusionMatrix, describe, macroF1, spearman,
   type Label,
@@ -11,12 +11,20 @@ import * as report from './lib/report'
 
 // Experiment driver for the AgentU resume-screening evaluation.
 //
-//   npx tsx --env-file=.env eval/run.ts <e1|e2|e3|e4|e5|all>
+//   npx tsx --env-file=.env eval/run.ts <e1|e1-heldout|e2|e3|e4|e5|all>
+//
+// EVAL_PROMPT=v1 runs the original screening prompt; the default is v2. Results from v2 are
+// saved with a -v2 suffix so they never overwrite the v1 results the paper reports.
 //
 // Every experiment writes eval/results/<name>.md (paper-ready tables) alongside
 // <name>.json (the raw observations behind them).
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+
+/** v1 results keep their original names; later prompt versions are saved beside them. */
+function resultName(base: string) {
+  return PROMPT_VERSION === 'v1' ? base : `${base}-${PROMPT_VERSION}`
+}
 
 function stamp() {
   return new Date().toISOString().replace('T', ' ').slice(0, 16)
@@ -46,11 +54,15 @@ type Observation = {
   degraded: boolean
 }
 
-async function e1() {
-  console.log('\n=== E1: screening accuracy vs human ground truth ===')
+async function e1(tier: 'synthetic' | 'heldout' = 'synthetic') {
+  console.log(`\n=== E1: screening accuracy vs human ground truth (${tier} tier) ===`)
   const jobs = jobById(loadJobs())
-  const resumes = indexResumes(await loadResumes('synthetic'))
-  const labels = loadLabels()
+  const resumes = indexResumes(await loadResumes(tier))
+  const labelFile = tier === 'heldout' ? 'labels-heldout.csv' : 'labels.csv'
+  const labels = loadLabels(labelFile)
+  const labelCounts = [...LABELS].reverse()
+    .map((label) => `${labels.filter((pair) => pair.humanLabel === label).length} ${label}`)
+    .join(' / ')
 
   console.log(`${labels.length} labelled pairs, ${resumes.size} resumes, ${jobs.size} jobs`)
 
@@ -106,11 +118,12 @@ async function e1() {
   }
 
   const conditions = ['gemini', 'keyword', 'majority']
-  report.preamble('E1 - Screening accuracy against human ground truth', {
+  report.preamble(`E1 - Screening accuracy against human ground truth (${tier} tier)`, {
     'Run at': stamp(),
     Model: MODEL,
-    Dataset: `synthetic tier, ${resumes.size} resumes x ${jobs.size} jobs = ${labels.length} labelled pairs`,
-    'Ground truth': 'labels assigned by the authors (see eval/dataset/labels.csv)',
+    'Screening prompt': PROMPT_VERSION,
+    Dataset: `${tier} tier, ${resumes.size} resumes x ${jobs.size} jobs = ${labels.length} labelled pairs`,
+    'Ground truth': `labels assigned by the authors (see eval/dataset/${labelFile})`,
     Conditions: 'gemini (production AI scorer), keyword (production fallback scorer), majority (reject-all floor)',
   })
 
@@ -132,7 +145,7 @@ async function e1() {
   report.table(['condition', 'accuracy', 'macro F1', 'Cohen kappa', 'Spearman rho (score vs human fit)'], summaryRows)
   report.paragraph(
     'Accuracy is reported alongside kappa and macro F1 because the label distribution is ' +
-    'imbalanced (36 rejected / 6 review / 6 selected). The majority row shows what rejecting ' +
+    `imbalanced (${labelCounts}). The majority row shows what rejecting ` +
     'every candidate would score, which is the floor a useful screener must beat.'
   )
 
@@ -160,35 +173,38 @@ async function e1() {
     'system orders candidates the way the human did, regardless of score calibration.'
   )
 
-  report.heading('Adversarial case: R06 (keyword stuffer)')
-  report.paragraph(
-    'R06 lists almost every term in every job specification but has no professional ' +
-    'experience, and is labelled rejected for all four roles. It separates semantic ' +
-    'judgement from lexical overlap.'
-  )
-  const r06Rows: (string | number)[][] = []
-  for (const jobId of [...jobs.keys()]) {
-    const gemini = observations.find((o) => o.condition === 'gemini' && o.jobId === jobId && o.resumeId === 'R06')!
-    const keyword = observations.find((o) => o.condition === 'keyword' && o.jobId === jobId && o.resumeId === 'R06')!
-    r06Rows.push([jobId, 'rejected', `${gemini.score} (${gemini.predicted})`, `${keyword.score} (${keyword.predicted})`])
-  }
-  report.table(['job', 'human label', 'gemini score', 'keyword score'], r06Rows)
+  // The adversarial resumes R06 and R07 exist only in the synthetic tier.
+  if (tier === 'synthetic') {
+    report.heading('Adversarial case: R06 (keyword stuffer)')
+    report.paragraph(
+      'R06 lists almost every term in every job specification but has no professional ' +
+      'experience, and is labelled rejected for all four roles. It separates semantic ' +
+      'judgement from lexical overlap.'
+    )
+    const r06Rows: (string | number)[][] = []
+    for (const jobId of [...jobs.keys()]) {
+      const gemini = observations.find((o) => o.condition === 'gemini' && o.jobId === jobId && o.resumeId === 'R06')!
+      const keyword = observations.find((o) => o.condition === 'keyword' && o.jobId === jobId && o.resumeId === 'R06')!
+      r06Rows.push([jobId, 'rejected', `${gemini.score} (${gemini.predicted})`, `${keyword.score} (${keyword.predicted})`])
+    }
+    report.table(['job', 'human label', 'gemini score', 'keyword score'], r06Rows)
 
-  report.heading('Vocabulary-mismatch case: R07 (Vue, not React)')
-  report.paragraph(
-    'R07 has five years of component-library, performance and accessibility depth in Vue ' +
-    'rather than React, and is labelled review for J1. It tests whether transferable ' +
-    'experience survives a vocabulary mismatch.'
-  )
-  const r07Gemini = observations.find((o) => o.condition === 'gemini' && o.jobId === 'J1' && o.resumeId === 'R07')!
-  const r07Keyword = observations.find((o) => o.condition === 'keyword' && o.jobId === 'J1' && o.resumeId === 'R07')!
-  report.table(
-    ['condition', 'score', 'predicted', 'human label'],
-    [
-      ['gemini', r07Gemini.score, r07Gemini.predicted, 'review'],
-      ['keyword', r07Keyword.score, r07Keyword.predicted, 'review'],
-    ]
-  )
+    report.heading('Vocabulary-mismatch case: R07 (Vue, not React)')
+    report.paragraph(
+      'R07 has five years of component-library, performance and accessibility depth in Vue ' +
+      'rather than React, and is labelled review for J1. It tests whether transferable ' +
+      'experience survives a vocabulary mismatch.'
+    )
+    const r07Gemini = observations.find((o) => o.condition === 'gemini' && o.jobId === 'J1' && o.resumeId === 'R07')!
+    const r07Keyword = observations.find((o) => o.condition === 'keyword' && o.jobId === 'J1' && o.resumeId === 'R07')!
+    report.table(
+      ['condition', 'score', 'predicted', 'human label'],
+      [
+        ['gemini', r07Gemini.score, r07Gemini.predicted, 'review'],
+        ['keyword', r07Keyword.score, r07Keyword.predicted, 'review'],
+      ]
+    )
+  }
 
   report.heading('Latency and degradation')
   const geminiObs = observations.filter((o) => o.condition === 'gemini')
@@ -203,7 +219,10 @@ async function e1() {
   report.bullet(`Billable API calls issued this run: ${apiCallsUsed()}`)
   report.paragraph('')
 
-  const path = report.save('e1-accuracy', { model: MODEL, runAt: stamp(), summaries, observations })
+  const path = report.save(
+    resultName(tier === 'heldout' ? 'e1-heldout' : 'e1-accuracy'),
+    { model: MODEL, prompt: PROMPT_VERSION, runAt: stamp(), summaries, observations }
+  )
   console.log(`  -> ${path}`)
   return observations
 }
@@ -290,7 +309,7 @@ async function e2(trials = 3) {
   report.bullet('Any non-zero flip rate means an identical application can receive a different decision on resubmission.')
   report.paragraph('')
 
-  const path = report.save('e2-determinism', { model: MODEL, runAt: stamp(), trials, rows })
+  const path = report.save(resultName('e2-determinism'), { model: MODEL, runAt: stamp(), trials, rows })
   console.log(`  -> ${path}`)
 }
 
@@ -354,7 +373,7 @@ async function e3() {
     report.paragraph('')
   }
 
-  const path = report.save('e3-variant-consistency', { model: MODEL, runAt: stamp(), results })
+  const path = report.save(resultName('e3-variant-consistency'), { model: MODEL, runAt: stamp(), results })
   console.log(`  -> ${path}`)
 }
 
@@ -476,7 +495,7 @@ async function e4() {
         'fields rather than raw resume text).'
   )
 
-  const path = report.save('e4-prompt-injection', { model: MODEL, runAt: stamp(), attacks: ATTACKS, rows })
+  const path = report.save(resultName('e4-prompt-injection'), { model: MODEL, runAt: stamp(), attacks: ATTACKS, rows })
   console.log(`  -> ${path}`)
 }
 
@@ -604,9 +623,9 @@ async function e5() {
 
 async function main() {
   const which = (process.argv[2] ?? 'all').toLowerCase()
-  const needsApi = ['e1', 'e2', 'e3', 'e4', 'all'].includes(which)
+  const needsApi = ['e1', 'e1-heldout', 'e2', 'e3', 'e4', 'all'].includes(which)
 
-  console.log(`AgentU evaluation harness | experiment: ${which} | model: ${MODEL}`)
+  console.log(`AgentU evaluation harness | experiment: ${which} | model: ${MODEL} | prompt: ${PROMPT_VERSION}`)
 
   if (needsApi) {
     const check = await preflight()
@@ -619,6 +638,7 @@ async function main() {
 
   const startedAt = Date.now()
   if (which === 'e1' || which === 'all') await e1()
+  if (which === 'e1-heldout' || which === 'all') await e1('heldout')
   if (which === 'e2' || which === 'all') await e2()
   if (which === 'e3' || which === 'all') await e3()
   if (which === 'e4' || which === 'all') await e4()

@@ -14,6 +14,7 @@
     "postinstall": "prisma generate",
     "eval": "tsx --env-file=.env eval/run.ts all",
     "eval:e1": "tsx --env-file=.env eval/run.ts e1",
+    "eval:e1-heldout": "tsx --env-file=.env eval/run.ts e1-heldout",
     "eval:e2": "tsx --env-file=.env eval/run.ts e2",
     "eval:e3": "tsx --env-file=.env eval/run.ts e3",
     "eval:e4": "tsx --env-file=.env eval/run.ts e4",

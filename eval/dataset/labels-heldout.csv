@@ -1,0 +1,25 @@
+jobId,resumeId,humanLabel,humanFit,note
+J1,H01,selected,4,6yr production React/TS with measured Core Web Vitals and WCAG work - direct hit
+J1,H02,rejected,0,Data and ML engineer, no frontend work
+J1,H03,review,2,React/TS in production but 18 months against a 3+ year bar
+J1,H04,rejected,0,Infrastructure engineer, no frontend work
+J1,H05,rejected,0,NLP graduate, no frontend work
+J1,H06,rejected,0,Java backend engineer, no frontend work
+J2,H01,rejected,0,Frontend specialist, no backend ownership
+J2,H02,rejected,0,Python data pipelines, not Node.js services
+J2,H03,rejected,1,Simple Node CRUD endpoints for 18 months, no database design or optimisation depth
+J2,H04,rejected,0,Infrastructure engineer, writes Go and Python tooling rather than Node services
+J2,H05,rejected,0,NLP graduate, no backend work
+J2,H06,review,3,8yr deep PostgreSQL, REST, auth and observability in Java not Node - transferable, worth interviewing
+J3,H01,rejected,0,Frontend specialist, no ML
+J3,H02,review,3,Shipped and monitors a production transformer classifier but evaluation is basic
+J3,H03,rejected,0,Junior full-stack, no ML
+J3,H04,rejected,0,Infrastructure engineer, no ML
+J3,H05,rejected,1,Strong academic NLP but no production deployment or industry role
+J3,H06,rejected,0,Java backend engineer, no ML
+J4,H01,rejected,0,Frontend specialist, no infrastructure
+J4,H02,rejected,1,Uses S3 and SageMaker and writes basic Terraform but does not operate infrastructure or Kubernetes
+J4,H03,rejected,0,Deploys to Render, no infrastructure
+J4,H04,selected,4,6yr EKS, Terraform, CI/CD, Linux, on-call and cost work - direct hit
+J4,H05,rejected,0,NLP graduate, no infrastructure
+J4,H06,rejected,1,Deploys to Kubernetes through charts the platform team owns, does not operate it

@@ -1,0 +1,27 @@
+Rafael Mendes
+Lisbon, Portugal | rafael.mendes@example.com
+
+SUMMARY
+Backend engineer, 8 years, almost all of it in Java and Spring Boot with PostgreSQL.
+Deep database skills; little Node.js.
+
+EXPERIENCE
+Senior Backend Engineer, Faro Logistics (2020 - present)
+- Designed the PostgreSQL schema for the shipment-tracking platform (1.2B rows); added
+  partitioning, rewrote the slowest queries from EXPLAIN ANALYZE plans and cut p95 API
+  latency from 900ms to 120ms.
+- Built REST APIs in Spring Boot with OAuth2 and role-based authorisation.
+- Kafka consumers for carrier events; integration tests with Testcontainers.
+- Added OpenTelemetry tracing and SLO dashboards for the team's services.
+- Services are deployed to Kubernetes with Helm charts maintained by the platform team.
+
+Backend Developer, Atlantico Bank (2017 - 2020)
+- Java services and PostgreSQL stored procedures for payment reconciliation.
+- Wrote one internal Node.js script to migrate legacy data.
+
+SKILLS
+Java, Spring Boot, PostgreSQL, SQL performance tuning, REST, OAuth2, Kafka, JUnit,
+Testcontainers, OpenTelemetry, Docker, Git, some Node.js
+
+EDUCATION
+MSc Informatics Engineering, University of Lisbon, 2017

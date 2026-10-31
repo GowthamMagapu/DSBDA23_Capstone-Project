@@ -46,6 +46,11 @@ against a 100% parse rate. We also report a methodological hazard encountered du
 itself: the system's own silent fallback corrupted our first measurement run, motivating a
 circuit breaker that refuses to emit a report when the model under test has stopped responding.
 
+Finally, we evaluate a revised prompt that states the decision rubric, asks for per-requirement
+evidence and fences resume text as untrusted input. On a held-out set written before the revision
+was run, it raised accuracy from 87.5% to 91.7% and κ from 0.695 to 0.781, and it blocked all ten
+injection attempts.
+
 **Keywords:** LLM-assisted recruitment, resume screening, prompt injection, event sourcing,
 graceful degradation, evaluation methodology
 
@@ -93,6 +98,9 @@ We address two questions:
 4. **An empirical characterisation of failure modes** in LLM resume screening, including a
    confirmed prompt-injection vulnerability that changes hiring decisions, sensitivity of scores
    to resume presentation rather than substance, and silent upstream extraction failure (§7).
+5. **A prompt intervention evaluated on held-out data.** Stating the decision rubric, requiring
+   evidence before a score and fencing untrusted input raised held-out accuracy from 87.5% to
+   91.7% and blocked every injection attack we tested (§7.9).
 
 ### 1.4 Scope
 
@@ -106,6 +114,21 @@ claims; they are not a benchmark. Limitations are stated in full in §9.
 
 > `[TODO]` Expand each paragraph to 3–5 sentences with specifics once you have read the sources.
 > Every citation below is marked `[VERIFY]` — confirm authors, venue and year before submission.
+
+**LLM resume screening (base paper).** Lo et al. [10] propose a four-agent framework (resume
+extractor, evaluator, summarizer and score formatter) built on CrewAI and LangChain, in which
+retrieval-augmented generation supplies the evaluator with external criteria such as job
+requirements, certifications and university rankings. On 105 anonymised HR-role resumes they
+compare GPT-4o and DeepSeek-V3 scores against ratings from HR professionals, reporting a Pearson
+correlation of 0.84 on the top and bottom 10% of candidates and an MAE of 0.90 for the
+RAG configuration. AgentU follows the same evaluation logic — agreement with human judgement
+rather than raw accuracy — but departs from it in two ways. Its screening step is deliberately a
+single model call with a deterministic fallback, so that determinism and injection effects can be
+attributed to one component; its agentic behaviour lies in workflow orchestration (§4.2) rather
+than in scoring. And Lo et al. evaluate an offline pipeline without testing determinism,
+presentation sensitivity, adversarial input or extraction failure, which are the subject of §7.
+Filatova et al. [11] describe a modular multi-agent hiring assistant with a human-review
+interface, benchmarked against recruiters on 64 applicants for a backend engineering role.
 
 **Algorithmic hiring and its risks.** The best-known cautionary case is Amazon's internal
 recruiting tool, abandoned after it was found to disadvantage women, reported by Dastin for
@@ -124,7 +147,9 @@ Models* (2022) `[VERIFY]` introduced the direct form. Greshake et al., *Not What
 For: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection* (2023)
 `[VERIFY]` describes the indirect form, which is exactly our threat model: the attack arrives
 inside a document the application ingests. The OWASP Top 10 for LLM Applications `[VERIFY]`
-lists prompt injection as LLM01.
+lists prompt injection as LLM01. Baxi et al. [12] study the attack in résumé screening specifically,
+finding that injected self-promotion improves rankings most when few candidates use it and
+candidates are of similar quality.
 
 **Agreement metrics.** Cohen's κ (Cohen, 1960) `[VERIFY]` corrects observed agreement for
 agreement expected by chance, which §6.4 argues is essential under our class imbalance.
@@ -133,7 +158,8 @@ agreement expected by chance, which §6.4 argues is essential under our class im
 datasets. We found comparatively little that reports, for one deployed system, the combination
 of screening quality, determinism, presentation sensitivity, adversarial robustness and upstream
 extraction reliability — and that measures the production code path rather than an idealised
-one. `[TODO: soften or strengthen this claim after your literature search; do not overclaim.]`
+one. The closest system, Lo et al. [10], reports agreement with HR ratings but no robustness
+measurements. `[TODO: soften or strengthen this claim after your literature search; do not overclaim.]`
 
 ---
 
@@ -270,7 +296,10 @@ decode for text) and returns an empty string for anything unrecognised. The extr
 concatenated with the cover letter and capped at 20,000 characters.
 
 `analyzeApplication` sends this text with the job title and requirements to Gemini under a
-system instruction demanding strict JSON, and maps the returned score to a decision band:
+system instruction demanding strict JSON, and maps the returned score to a decision band. The
+production system instruction is prompt v2, which states the scoring rubric, asks for
+per-requirement evidence and fences the resume as untrusted text (§7.9); §§7.1–7.8 measure the
+original prompt, v1, which asked only for a 0–100 match score. The bands are:
 **≥ 70 → `selected`, ≥ 40 → `review`, otherwise `rejected`**. The intermediate `review` band is
 deliberate: it routes uncertain cases to a human rather than resolving them automatically.
 
@@ -317,6 +346,11 @@ candidate's resume, as PDFs. One candidate cannot support an accuracy claim and 
 What it supports is a consistency claim: all seven describe the same person, education and
 projects, so a screener should score them similarly for a given role.
 
+**Held-out tier (committed).** Six further authored resumes × the same four jobs = **24
+labelled pairs** (19 rejected / 3 review / 2 selected), written and labelled under the same rules
+as the synthetic tier *before* the revised prompt of §7.9 was run. It exists to measure whether a
+prompt change made after studying the synthetic tier's errors generalises beyond them.
+
 ### 6.3 Conditions
 
 | Condition | Description |
@@ -324,6 +358,9 @@ projects, so a screener should score them similarly for a given role.
 | `gemini` | Production AI scorer |
 | `keyword` | Production fallback — requirement-term overlap; deterministic, no network |
 | `majority` | Reject every candidate — the floor set by class imbalance |
+
+Every `gemini` result in §§7.1–7.8 uses screening prompt v1. §7.9 compares v1 with the revised
+prompt v2 on both labelled tiers.
 
 ### 6.4 Metrics
 
@@ -476,7 +513,7 @@ The pattern is informative: naive attacks (A1, A3, A4, A5) failed, while imperso
 turn succeeded on both bases. The model appears to discriminate by *form* rather than by
 provenance — it resists text that reads like a candidate making a request, and complies with
 text that reads like an instruction from the operator. Any candidate who places that sentence in
-white-on-white text in their PDF is shortlisted. This is live and unmitigated.
+white-on-white text in their PDF is shortlisted under v1. §7.9 measures a mitigation.
 
 ### 7.7 Extraction reliability and latency (E5, E1)
 
@@ -519,6 +556,68 @@ This also has a deployment consequence: on the configured model, any demonstrati
 degrades to keyword matching after 20 requests, presenting keyword scores to a recruiter as AI
 evaluations with no visible signal.
 
+### 7.9 Intervention: a rubric prompt (v2)
+
+The errors in §§7.1–7.3 share a cause visible in the prompt itself. v1 asks for a 0–100 "overall
+match strength" but never says what the 40 and 70 cutoffs mean, so partial matches drift to about
+45 and land in `review`: seven of the nine errors, including all four keyword-stuffer pairs, were
+rejected candidates scored 45–52. We therefore wrote a second prompt, v2, with three changes:
+
+1. **A rubric aligned to the bands.** 70–100 meets every core requirement, including any stated
+   minimum years; 40–69 has one significant gap; 0–39 lacks several core requirements or any
+   professional experience in the role's area. Two explicit caps: no professional experience in
+   the area scores at most 39, and fewer than the stated minimum years at most 69. A skill counts
+   only when the resume shows it used in professional work.
+2. **Evidence before the score.** The model lists each core requirement with a short piece of
+   evidence and a met / partial / missing verdict, then gives the score.
+3. **Untrusted-input fencing.** The resume is wrapped in `<<<RESUME … RESUME>>>` delimiters,
+   which are stripped from the candidate's text so a resume cannot close its own block, and the
+   model is told to ignore any instruction inside them.
+
+Because v2 was written after studying the synthetic tier's errors, its score on that tier is
+optimistic. We therefore wrote the held-out tier (§6.2) before running v2 and report both prompts
+on it. Model `gemini-3.5-flash-lite`, temperature 0.2, run 2026-10-30.
+
+**Held-out tier** (24 pairs; 19 rejected / 3 review / 2 selected):
+
+| Condition | Accuracy | Macro F1 | Cohen's κ | Spearman ρ |
+| --- | --- | --- | --- | --- |
+| gemini, v1 | 87.5% | 0.759 | 0.695 | 0.845 |
+| **gemini, v2** | **91.7%** | **0.813** | **0.781** | **0.910** |
+| keyword | 83.3% | 0.428 | 0.429 | 0.802 |
+| majority | 79.2% | 0.295 | 0.000 | 0.000 |
+
+**Synthetic tier** (48 pairs; v2 was revised against these errors):
+
+| Condition | Accuracy | Macro F1 | Cohen's κ | Spearman ρ |
+| --- | --- | --- | --- | --- |
+| gemini, v1 (§7.1) | 81.3% | 0.740 | 0.623 | 0.915 |
+| gemini, v2 | 100.0% | 1.000 | 1.000 | 0.882 |
+
+On held-out data v2 makes two errors against v1's three, and it removes v1's only two-band error:
+H05, an NLP graduate with academic projects but no industry role, scored 75 (`selected`) under v1
+and is rejected under v2. Both remaining errors are one-band over-promotions: H03 on J2 scored 55
+(`review`) against a human `rejected`, and H02 on J3 scored 75 (`selected`) against `review`. With
+24 pairs a single decision moves accuracy by 4.2 points, so the held-out improvement is
+directional rather than conclusive.
+
+On the synthetic tier v2 classifies all 48 pairs correctly, including the keyword stuffer R06
+(scored 0 in all four roles, against 45 under v1) and the vocabulary-mismatch case R07 (50,
+`review`, matching the human label). This is the expected effect of fixing the errors that
+motivated the rubric and is not evidence of generalisation; the held-out figure is the honest
+estimate. Rank correlation falls slightly (0.915 → 0.882) because v2 scores most clear rejections
+at 0, discarding the ordering among them that v1 retained.
+
+**Prompt injection under v2** (E4 re-run, same five attacks on the same two bases): success rate
+**0/10**, against 2/10 under v1; mean score delta 2.0 (SD 4.2), against 11.4 (SD 30.4). The forged
+system turn (A2) that moved R09 from 0 to 95 now leaves it at 0. Two attacks (A2, A5) still raised
+R08 from 55 to 65, below the 20-point success threshold and without changing the decision, so
+fencing reduces the model's responsiveness to injected text but does not remove it.
+
+Production now uses v2. v1 remains selectable in the harness (`EVAL_PROMPT=v1`), so every result
+in §§7.1–7.8 stays reproducible. Determinism (E2) and presentation sensitivity (E3) were not
+re-run under v2.
+
 ---
 
 ## 8. Discussion
@@ -534,8 +633,14 @@ candidates a human wanted. Systems that make consequential decisions about peopl
 designed so their errors land on the recoverable side, and an explicit "route to a human" band
 is a cheap way to obtain that.
 
+**Stating the decision rule is cheap and effective.** Most of v1's errors came from a prompt that
+asked for a score without saying what the score would be used for. Writing the labelling policy
+into the prompt (§7.9) improved every agreement metric on held-out data at no engineering cost.
+A screener's thresholds and its instructions should be designed together, not separately.
+
 **Presentation sensitivity may be the most consequential finding.** Injection (§7.6) requires a
-deliberate attacker and is fixable with known techniques. Format sensitivity (§7.5) affects every
+deliberate attacker, and §7.9 shows a known technique, delimiting untrusted input, blocked every
+attack we tried. Format sensitivity (§7.5) affects every
 honest candidate: the same person gets different outcomes depending on which tailoring of their
 resume they submit. This rewards candidates who can afford to optimise presentation, and is not
 addressed by any mitigation we implemented.
@@ -592,6 +697,15 @@ This system ranks people for employment. The following are stated plainly rather
   version string. Run date and model identifier are recorded in every report.
 - **Adversarial set is small.** Five attack patterns on two bases. A 20% success rate on this set
   establishes that the vulnerability is real, not its prevalence under a broader attack surface.
+  Likewise, v2's 0/10 shows the mitigation works against these attacks, not against an adaptive
+  attacker.
+- **Prompt revised against the test set.** v2 was written after inspecting the synthetic tier's
+  errors, so its 100% there is not a generalisation estimate. The held-out tier mitigates this, but
+  its resumes and labels were written by the same authors who wrote the rubric, so it shares their
+  notion of fit, and with 24 pairs and five minority-class instances it is smaller still.
+- **Latency is not comparable across runs.** Median uncached latency ranged from 2.3 s to 6.9 s
+  between runs on the same day, so we make no latency claim for v2. Its longer output
+  (per-requirement evidence) may lengthen the applicant's wait on the application path (§4.4).
 
 ---
 
@@ -599,10 +713,9 @@ This system ranks people for employment. The following are stated plainly rather
 
 Ordered by what the results indicate is most urgent.
 
-1. **Mitigate prompt injection (§7.6).** Delimit resume text explicitly as untrusted data,
-   instruct the model that text inside the delimiters is never an instruction, strip
-   instruction-like patterns before scoring, or score from extracted structured fields rather
-   than raw text. Re-run E4 to measure the mitigation rather than asserting it.
+1. **Broaden injection testing (§7.9).** v2's fencing blocked all ten attacks in E4 but still let
+   two of them move a score by 10 points. Test a larger and adaptive attack set, hidden-text
+   variants inside real PDFs, and scoring from extracted structured fields rather than raw text.
 2. **Make degradation visible (§7.8).** Record fallback scoring as a `warning` event and surface
    it in the feed and the recruiter email, so a keyword-scored application is never presented as
    an AI evaluation.
@@ -613,7 +726,8 @@ Ordered by what the results indicate is most urgent.
 5. **Reduce presentation sensitivity (§7.5).** Investigate whether extracting structured fields
    before scoring, or averaging across several prompt framings, narrows the spread.
 6. **Strengthen the evaluation.** A second annotator with inter-annotator agreement; real
-   anonymised resumes; a larger and more balanced label set; comparison across models.
+   anonymised resumes; a larger and more balanced label set; comparison across models; E2 and
+   E3 re-run under prompt v2.
 7. **Engineering.** Replace the in-memory rate limiter with a shared store for multi-instance
    deployment; move resume blobs out of the database to object storage; normalise the JSON-in-Text
    columns; add automated tests.
@@ -636,6 +750,11 @@ it is exploitable by a one-line prompt injection that changes hiring outcomes, a
 scores scanned resumes as empty. Additionally, the fallback that makes the system resilient makes
 it opaque — a property that corrupted our own first measurement run before it was detected.
 
+A revised prompt addresses part of this. On held-out pairs written before it was run, v2 raised
+accuracy from 87.5% to 91.7% and κ from 0.695 to 0.781 and removed the only two-band error, and
+it blocked all ten injection attempts. Presentation sensitivity, silent extraction failure and
+silent degradation remain open.
+
 For systems that make consequential decisions about people, we argue that characterising failure
 modes is not an appendix to the evaluation but the substance of it.
 
@@ -655,7 +774,10 @@ modes is not an appendix to the evaluation but the substance of it.
 7. J. Cohen, "A Coefficient of Agreement for Nominal Scales," *Educational and Psychological Measurement*, 1960. `[VERIFY]`
 8. New York City Local Law 144 of 2021, Automated Employment Decision Tools. `[VERIFY]`
 9. Regulation (EU) 2024/1689, Artificial Intelligence Act. `[VERIFY]`
-10. `[TODO]` 5–10 further references from your literature search on LLM-based resume screening.
+10. F. P.-W. Lo, J. Qiu, Z. Wang, H. Yu, Y. Chen, G. Zhang, and B. Lo, "AI Hiring with LLMs: A Context-Aware and Explainable Multi-Agent Framework for Resume Screening," in *Proc. IEEE/CVF Conf. Computer Vision and Pattern Recognition Workshops (CVPRW)*, 2025. arXiv:2504.02870. **Base paper.** `[VERIFY page numbers]`
+11. V. Filatova, A. Zelenchuk, and D. Filatov, "AI-Driven Decision-Making System for Hiring Process," arXiv:2512.20652, 2025.
+12. P. Baxi, J. Xu, J. Y. Jiang, and S. Jasin, "Prompt Injection in Automated Résumé Screening with Large Language Models: Single and Multi-Injection Settings," in *Findings of the Association for Computational Linguistics: ACL 2026*, 2026. arXiv:2606.27287. `[VERIFY page numbers]`
+13. `[TODO]` Further references from your literature search on LLM-based resume screening.
 
 ---
 
