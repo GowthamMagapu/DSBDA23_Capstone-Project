@@ -39,6 +39,11 @@ export async function GET(
       missingSkills: true,
       resumeFileName: true,
       createdAt: true,
+      stage: true,
+      interviewAt: true,
+      interviewLink: true,
+      feedbackRating: true,
+      feedbackNotes: true,
     },
     orderBy: { score: 'desc' },
   })

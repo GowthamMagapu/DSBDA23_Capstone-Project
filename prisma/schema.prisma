@@ -99,6 +99,13 @@ model Application {
   matchedSkills  String?           @db.Text
   missingSkills  String?           @db.Text
   source         String            @default("public")
+  // Management agent: where the recruiter has moved this candidate, and interview details.
+  stage          String            @default("applied")
+  stageUpdatedAt DateTime?
+  interviewAt    DateTime?
+  interviewLink  String?           @db.Text
+  feedbackRating Int?
+  feedbackNotes  String?           @db.Text
   createdAt      DateTime          @default(now())
   jobId          String
   job            Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)

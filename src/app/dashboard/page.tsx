@@ -8,6 +8,7 @@ import { CompanyProfilePanel, type Company } from '@/components/dashboard/Compan
 import { LinkedInPanel } from '@/components/dashboard/LinkedInPanel'
 import { AgentActivityFeed, type AgentEvent } from '@/components/dashboard/AgentActivityFeed'
 import ScreeningIntegrityPanel from '@/components/dashboard/ScreeningIntegrityPanel'
+import { ManagementAgentPanel } from '@/components/dashboard/ManagementAgentPanel'
 import type { ScreeningAnalysis } from '@/lib/screening-analysis'
 import { buildLinkedInShareUrl, createJobAnnouncementText, parseJobTags } from '@/lib/job-sharing'
 
@@ -35,6 +36,11 @@ type Application = {
   matchedSkills: string | null
   missingSkills: string | null
   resumeFileName: string | null
+  stage: string | null
+  interviewAt: string | null
+  interviewLink: string | null
+  feedbackRating: number | null
+  feedbackNotes: string | null
 }
 
 export default function DashboardPage() {
@@ -109,7 +115,7 @@ export default function DashboardPage() {
 
   // Keep the pipeline in sync as the agent works in the background (new applicants, pool scoring, LinkedIn).
   const handleAgentEvents = useCallback((events: AgentEvent[]) => {
-    if (!events.some((event) => /^(job|application|pool|linkedin)\./.test(event.type))) return
+    if (!events.some((event) => /^(job|application|pool|linkedin|management)\./.test(event.type))) return
     refreshJobs()
     const currentJobId = selectedJobIdRef.current
     if (currentJobId && events.some((event) => event.jobId === currentJobId)) refreshSelectedJob(currentJobId)
@@ -227,7 +233,7 @@ export default function DashboardPage() {
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {[
               { id: 'hr-agent', number: '01', title: 'HR Agent', text: 'Publish roles, receive applications, and find the strongest matches.', active: true },
-              { id: 'management-agent', number: '02', title: 'Management', text: 'Coordinate interviews, feedback, and candidate communication.', active: false },
+              { id: 'management-agent', number: '02', title: 'Management', text: 'Coordinate interviews, feedback, and candidate communication.', active: true },
               { id: 'analysis-agent', number: '03', title: 'Analysis', text: 'Score distribution, confidence, and screening-integrity checks for a selected role.', active: true },
             ].map((agent) => (
               <a key={agent.id} href={`#${agent.id}`} className={`border p-5 transition-colors ${agent.active ? 'border-white/50 bg-white text-black' : 'border-white/15 bg-white/5 text-white hover:border-white/40'}`}>
@@ -452,8 +458,13 @@ export default function DashboardPage() {
 
         <section id="management-agent" className="mt-8 border border-white/10 bg-white/5 p-6">
           <p className="text-xs uppercase tracking-[0.2em] text-white/40">Management</p>
-          <h2 className="mt-3 text-2xl font-medium">People operations, next.</h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-white/50">Interview scheduling, feedback collection, and candidate coordination will live here.</p>
+          <h2 className="mt-3 text-2xl font-medium">{selectedJob ? `Coordinate candidates for ${selectedJob.title}` : 'Coordinate your candidates'}</h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-white/50">Move candidates through the pipeline, schedule interviews, record feedback, and send AI-drafted emails you review first.</p>
+          <ManagementAgentPanel
+            job={selectedJob}
+            applications={applications}
+            onChanged={() => { if (selectedJob) refreshSelectedJob(selectedJob.id) }}
+          />
         </section>
       </div>
     </main>

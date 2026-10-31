@@ -26,7 +26,7 @@ function getTransporter() {
   return transporter
 }
 
-export async function sendEmail(message: { to: string; subject: string; html: string; text: string }): Promise<SendEmailResult> {
+export async function sendEmail(message: { to: string; subject: string; html: string; text: string; replyTo?: string }): Promise<SendEmailResult> {
   if (!isEmailConfigured()) {
     return { sent: false, reason: 'Email credentials are not configured.' }
   }
