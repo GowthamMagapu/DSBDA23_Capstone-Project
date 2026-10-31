@@ -59,7 +59,7 @@
 
   <rect x="368" y="202" width="470" height="54" rx="6" fill="#ffffff" stroke="#c8d0da"/>
   <text x="378" y="221" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">checkRateLimit(&quot;apply:&lt;ip&gt;&quot;, 5 per 15 min) → 429</text>
-  <text x="378" y="238" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">file present · ≤ 10 MB · extension allowlist → 400</text>
+  <text x="378" y="238" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">file present · ≤ 4 MB · extension allowlist → 400</text>
   <text x="378" y="252" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#5b6472">Zod: name ≥ 2, valid email, cover letter 30–8000 chars → 400</text>
 
   <line x1="360" y1="286" x2="994" y2="286" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#b)"/>
@@ -82,7 +82,7 @@
   <rect x="470" y="440" width="600" height="60" rx="6" fill="#fdf2ef" stroke="#c9694a"/>
   <text x="482" y="458" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#a03a1d">F6 — prompt-injection surface</text>
   <text x="482" y="475" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">Candidate-supplied text is concatenated straight into the prompt, on the same channel as the screening</text>
-  <text x="482" y="491" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">instructions. A forged &quot;SYSTEM:&quot; line moved an unrelated candidate from 0 to 95. Unmitigated.</text>
+  <text x="482" y="491" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">instructions. A forged &quot;SYSTEM:&quot; line moved an unrelated candidate from 0 to 95 (v1). v2 fences it: 0/10.</text>
 
   <line x1="800" y1="528" x2="366" y2="528" stroke="#5b6472" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#bDash)"/>
   <text x="368" y="523" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#5b6472">{ score, aiSummary, matchedSkills, missingSkills } → band: ≥70 selected · ≥40 review · else rejected</text>
@@ -90,7 +90,7 @@
   <rect x="470" y="540" width="600" height="58" rx="6" fill="#fdf2ef" stroke="#c9694a"/>
   <text x="482" y="558" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#a03a1d">F8 — silent degradation</text>
   <text x="482" y="575" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">Any failure (quota, network, malformed JSON) is caught and keyword-overlap scores</text>
-  <text x="482" y="590" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">are returned with an empty summary. No user-visible signal that the AI never ran.</text>
+  <text x="482" y="590" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="10.5" fill="#7d3a26">are returned with an empty summary. The reason is now posted to the feed as a warning.</text>
 
   <line x1="360" y1="610" x2="994" y2="610" stroke="#1a1d23" stroke-width="1.6" marker-end="url(#b)"/>
   <text x="368" y="605" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#1a1d23">candidateProfile.upsert({ where: { email } }) — builds the reusable talent pool</text>

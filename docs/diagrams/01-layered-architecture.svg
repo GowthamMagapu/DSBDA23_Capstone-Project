@@ -11,7 +11,7 @@
   <rect x="0" y="0" width="1240" height="950" fill="#ffffff"/>
 
   <text x="40" y="38" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="22" font-weight="600" fill="#1a1d23">AgentU — Layered Architecture</text>
-  <text x="40" y="60" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#5b6472">Next.js 15 App Router · 17 route handlers · 15-module service layer · Prisma 7 over MariaDB · three external services</text>
+  <text x="40" y="60" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#5b6472">Next.js 15 App Router · 19 route handlers · 27-module service layer · Prisma 7 over MariaDB · three external services</text>
 
   <!-- ================= Band 1: Client ================= -->
   <rect x="40" y="80" width="920" height="120" rx="10" fill="#f7f9fb" stroke="#dde3ea"/>
@@ -52,7 +52,7 @@
 
   <!-- ================= Band 3: Route handlers ================= -->
   <rect x="40" y="358" width="920" height="150" rx="10" fill="#f7f9fb" stroke="#dde3ea"/>
-  <text x="56" y="381" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#5b6472" letter-spacing="0.6">ROUTE HANDLERS — src/app/api (17 routes)</text>
+  <text x="56" y="381" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#5b6472" letter-spacing="0.6">ROUTE HANDLERS — src/app/api (19 routes)</text>
 
   <rect x="56" y="392" width="168" height="98" rx="7" fill="#ffffff" stroke="#c8d0da"/>
   <text x="66" y="412" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#1a1d23">/api/auth/*</text>

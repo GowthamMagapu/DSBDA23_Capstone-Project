@@ -13,15 +13,18 @@ other uploads.
 
 ## Before you submit
 
-- **Add author emails.** The three authors are set (M G K Gowtham, V Balaji Vaddi,
+- **Add author emails.** The three authors are set (M G K Gowtham, V Balaji Naidu,
   D Hemanth Raj); each block still has an `email@domain` placeholder to replace with an
   email address or ORCID.
-- **Verify every reference.** The nine entries in `thebibliography` carry the venues and
-  years the draft recorded, but the draft marks all of them `[VERIFY]`. Open each source
-  and confirm authors, venue, year and page numbers before submitting.
-- **Check the page count** against your target venue's limit. Twelve tables is a lot; the
-  per-job correlation, keyword-stuffing and latency tables are the first things to cut.
-- **Update the acknowledgment** with your guide's name.
+- **Compile once on Overleaf and read the log.** The file was checked for balanced
+  environments and braces, resolved references and citations, but it has not been compiled
+  locally. Look for overfull boxes in the three full-width tables in particular.
+- **Check the page count** against your target venue's limit. Twelve tables is a lot;
+  the per-job correlation, keyword-stuffing and extraction tables are the first to cut.
+
+The 25 references were checked against arXiv and Crossref (authors, venue, year, pages and
+DOI). The two without a DOI, the Reuters article [b7] and the Upturn report [b8], and the two
+legal texts [b15], [b16] were not machine-checked.
 
 ## Figures
 
@@ -50,5 +53,7 @@ PDF first — `graphicx` under pdfLaTeX does not read SVG.
 - Section cross-references use `\ref{}` against labels rather than the draft's `§` numbers.
 - Product and vendor names are generalised in places where the claim does not depend on the
   specific vendor.
-- The draft's `[TODO]` and `[VERIFY]` markers are removed from the rendered text; the
-  verification reminder survives as a LaTeX comment above the bibliography.
+- The Markdown version has four figures; this version has none (see Figures above), so
+  the text describes the architecture without figure references.
+- The attack line quoted verbatim in the Markdown draft is paraphrased here, since a long
+  unbreakable monospace line does not fit a two-column page.
